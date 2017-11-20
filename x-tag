@@ -1,0 +1,32 @@
+#!/bin/bash
+#
+# Special version of annotated git tag,
+# it explicitly works on two branches only: rdma-next and rdma-rc.
+#
+
+if [ "$#" -gt 1 ]; then
+        echo "Usage: x tag <commit sha1>"
+        exit 1
+fi
+
+export DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+. $DIR/env.config
+. $DIR/common
+
+if [ "$#" -gt 0 ]; then
+	SHA1=$1
+else
+	SHA1="HEAD"
+fi
+
+BRANCH=$(git symbolic-ref HEAD | sed -e 's,.*/\(.*\),\1,')
+
+if [ "$BRANCH" != "rdma-next" ] && [ "$BRANCH" != "rdma-rc" ]; then
+	echo "It works on rdma-next or rdma-rc branches. Exiting...."
+	exit
+fi
+
+TAG="$BRANCH-$( date +%F )"
+git sp user
+git tag -a -s $TAG $SHA1
+echo "Your tag is $TAG"

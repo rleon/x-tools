@@ -1,0 +1,29 @@
+#!/bin/bash
+#
+# Run full CI for specific commit
+
+if [ "$#" -gt 1 ]; then
+        echo "Usage: x checks <commit sha1>"
+        exit 1
+fi
+
+export DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+. $DIR/env.config
+. $DIR/common
+
+if [ "$#" -gt 0 ]; then
+	SHA1=$1
+else
+	SHA1=$(git rev-parse HEAD)
+fi
+
+REPORT_FILE=$(mktemp)
+
+function do_one {
+	local SHA1=$1
+	ssh leonro@dev-l-vrt-151.lab.mtl.com "nohup sh /labhome/leonro/src/tools/ci.runner $SHA1 &>/dev/null &"
+}
+
+#git remote update
+#git push backup --mirror
+do_one $SHA1

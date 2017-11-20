@@ -1,0 +1,34 @@
+#!/bin/bash
+#
+# Run checkpatch.pl on one specific commit
+#
+
+if [ "$#" -gt 2 ]; then
+        echo "Usage: x checkpatch <commit sha1> <dir>"
+        exit 1
+fi
+
+export DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+. $DIR/env.config
+. $DIR/common
+
+if [ "$#" -gt 0 ]; then
+	SHA1=$1
+else
+	SHA1="HEAD"
+fi
+
+if [ "$#" -gt 1 ]; then
+	PDIR=$2
+	PDIR_TO_DELETE=0
+else
+	PDIR=$(mktemp -d)
+	PDIR_TO_DELETE=1
+fi
+
+git format-patch -M -C -1 -o $PDIR/ $SHA1
+checkpatch $PDIR
+
+if [ $PDIR_TO_DELETE -eq 1 ]; then
+	rm -rf $PDIR
+fi

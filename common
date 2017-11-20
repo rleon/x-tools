@@ -1,0 +1,21 @@
+#!/bin/bash
+#
+
+function checkpatch() {
+	PDIR=$1
+	sed -i "/^Issue:[ 0-9]*/Id" $PDIR/*.patch
+	sed -i "/^Change-id:[ 0-9]*/Id" $PDIR/*.patch
+
+	if [ -e "scripts/checkpatch.pl" ]; then
+		# We are in kernel repo
+		IN_TREE=""
+	else
+		IN_TREE="--no-tree --ignore PREFER_KERNEL_TYPES,FILE_PATH_CHANGES,EXECUTE_PERMISSIONS"
+	fi
+
+	for file in $PDIR/*.patch; do
+		[ -e "$file" ] || continue
+		[ "$file" != "$PDIR/0000-cover-letter.patch" ] || continue
+		perl $CHECKPATCH $IN_TREE --strict -q $file
+	done
+}

@@ -1,0 +1,49 @@
+#!/bin/bash
+#
+# Special version of cherry-pick from gerrit.
+# It removes Issue, changeid, runs checkpatch and add reviewed-by tags.
+# It works on rdma-rc/rdma-next branches only.
+#
+
+if [ "$#" -ne 1 ]; then
+        echo "Usage: x cp <commit sha1>"
+        exit 1
+fi
+
+export DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+. $DIR/env.config
+. $DIR/common
+
+IN=$1
+
+TARGET=$(git symbolic-ref HEAD | sed -e 's,.*/\(.*\),\1,')
+if [ "$TARGET" != "rdma-next" ] && [ "$TARGET" != "rdma-rc" ]; then
+	echo "It works on rdma-next or rdma-rc branches. Exiting...."
+	exit
+fi
+
+if [[ $IN != *".."* ]]; then
+	IN="-1 $IN"
+fi
+
+PRTMP=$(mktemp -d)
+git format-patch -M -C --no-cover-letter -s -o $PRTMP/ $IN
+
+for file in $PRTMP/*.patch; do
+	CHANGEID=$(grep -i change-id $file | awk '{print $2}')
+	ROB=$(ssh -x -p 29418 gerrit.mtl.com gerrit query --all-approvals change:$CHANGEID| \
+		grep "type: Code-Review" -A 6 | \
+		grep "value: 1" -A 4 | \
+		grep "email\|name" | \
+		sort -u)
+	if [ "r$ROB" != "r" ]; then
+		ROB=$(echo $ROB | awk '{print "Reviewed-by: " $4 " " $5 " <" $2 ">"}')
+		echo $ROB
+	fi
+	sed -i -e '/^Issue:[ 0-9]*/Id' -e '/^Change-id:[ 0-9]*/Id' $file
+	sed -i "0,/Signed-off-by: Leon Romanovsky <leon@kernel.org>/s//$ROB\nSigned-off-by: Leon Romanovsky <leon@kernel.org>/" $file
+done
+
+checkpatch $PRTMP/
+git am $PRTMP/*
+rm -fr $PRTMP

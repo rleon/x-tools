@@ -1,0 +1,53 @@
+#!/bin/bash
+#
+# Run various static checkers on one specific commit
+#  * sparse
+#  * smatch
+#  # checkpatch
+
+if [ "$#" -gt 1 ]; then
+        echo "Usage: x checks <commit sha1>"
+        exit 1
+fi
+
+export DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+. $DIR/env.config
+. $DIR/common
+
+if [ "$#" -gt 0 ]; then
+	SHA1=$1
+else
+	SHA1="HEAD"
+fi
+
+REPORT_FILE=$(mktemp)
+
+function do_one {
+	SHA1=$1
+	REPORT_FILE=$2
+	PDIR=$(mktemp -d)
+
+	git worktree add $PDIR $SHA1
+	echo "Redirecting the output to $REPORT_FILE"
+	pushd $PDIR &>> $REPORT_FILE
+	x checkpatch HEAD $PDIR &>> $REPORT_FILE
+	cp $KCONFIG . &>> $REPORT_FILE
+	make olddefconfig &>> $REPORT_FILE
+	echo "===== FULL COMPILE =========" &>> $REPORT_FILE
+	make -s -j 4 &>> $REPORT_FILE
+	echo "===== SUB COMPILE =========" &>> $REPORT_FILE
+	make -s -j 4 W=1 drivers/infiniband/ drivers/net/ethernet/mellanox/ &>> $REPORT_FILE
+	echo "===== SMATCH =========" &>> $REPORT_FILE
+	make CHECK="$SMATCH -p=kernel" C=1 drivers/infiniband/ drivers/net/ethernet/mellanox/ -s -j 4 &>> $REPORT_FILE
+	echo "===== SPARSE =========" &>> $REPORT_FILE
+	make CHECK="$SPARSE" C=2 drivers/infiniband/ drivers/net/ethernet/mellanox/ -s -j 4  &>> $REPORT_FILE
+	popd &>> $REPORT_FILE
+	rm -rf $PDIR
+	git worktree prune
+	# TODO: separate checkpatch errors, sparse, smatch
+	#NUMB_OF_ERRORS=$(grep "[0-9]: " $REPORT_FILE | sort | uniq |wc -l)
+	NUMB_OF_ERRORS=$(awk -F": " '{print $1}' $REPORT_FILE | grep ":" | sort | uniq |wc -l)
+	echo "There are $NUMB_OF_ERRORS errors/warnings"
+}
+
+do_one $SHA1 $REPORT_FILE

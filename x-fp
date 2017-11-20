@@ -1,0 +1,61 @@
+#!/bin/bash
+#
+# Prepare topic for the upstream submission.
+# It works on rdma-rc/rdma-next branches only.
+#
+
+if [ "$#" -lt 2 ] || [ "$#" -gt 3 ]; then
+        echo "Usage: x fp <start commit sha1> <tag> [ver]"
+	echo "	<start commit sha1> should be in upstream branch"
+        exit 1
+fi
+
+export DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+. $DIR/env.config
+. $DIR/common
+
+START=$1
+
+if [ "$#" -gt 1 ]; then
+	TAG=$2
+fi
+
+if [ "$#" -gt 2 ]; then
+	VER_NUMB=$3
+	VER=" v$VER_NUMB"
+else
+	VER_NUMB=0
+	VER=""
+fi
+
+TARGET=$(git symbolic-ref HEAD | sed -e 's,.*/\(.*\),\1,')
+if [ "$TARGET" != "rdma-next" ] && [ "$TARGET" != "rdma-rc" ]; then
+	echo "It works on rdma-next or rdma-rc branches. Exiting...."
+	exit
+fi
+
+DIRECTORY="$PATCHES_DIR/$TARGET/$TAG/$VER_NUMB"
+if [ -d "$DIRECTORY" ]; then
+	echo "$DIRECTORY exists, exiting ...."
+	exit 1
+fi
+
+mkdir -p $DIRECTORY/
+git format-patch -M -C --cover-letter --no-signoff --subject-prefix "PATCH $TARGET$VER" -o $DIRECTORY/ $START..$TAG
+TITLE=$(git show tags/$TAG --oneline | head -n 3 | tail -n 1)
+sed -i "s/\*\*\* SUBJECT HERE \*\*\*/$TITLE/g" $DIRECTORY/0000-cover-letter.patch
+CONF=$(mktemp)
+git show --oneline  tags/$TAG | sed -e '/-----BEGIN PGP SIGNATURE-----/,$d' | tail -n +5 >> $CONF
+
+echo "" >> $CONF
+echo "The patches are available in the git repository at:" >> $CONF
+echo "  git.kernel.org/pub/scm/linux/kernel/git/leon/linux-rdma.git tags/$TAG" >> $CONF
+echo "" >> $CONF
+echo "	Thanks" >> $CONF
+echo "---------------------------------------" >> $CONF
+sed -i "/\*\*\* BLURB HERE \*\*\*/r $CONF" $DIRECTORY/0000-cover-letter.patch
+sed -i "/\*\*\* BLURB HERE \*\*\*/d" $DIRECTORY/0000-cover-letter.patch
+checkpatch $DIRECTORY/
+rm -rf $CONF
+rm -f $PATCHES_DIR/$TARGET/$TAG/latest
+ln -sr $DIRECTORY $PATCHES_DIR/$TARGET/$TAG/latest
