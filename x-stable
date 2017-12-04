@@ -1,0 +1,46 @@
+#!/bin/bash
+#
+# Mark specific commit as targeted for stable
+
+if [ "$#" -gt 1 ]; then
+        echo "Usage: x stable <commit sha1>"
+        exit 1
+fi
+
+export DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+. $DIR/env.config
+. $DIR/common
+
+if [ "$#" -gt 0 ]; then
+	IN=$1
+else
+	IN="HEAD"
+fi
+
+PREV=$IN^1
+
+if [ "$(git show $IN | grep -c stable\@vger.kernel.org)" -gt 0 ]; then
+	echo "There is already stable@vger.kernel.org in the commit message. Exiting..."
+	exit
+fi
+
+set -e
+PRTMP=$(mktemp -d)
+git format-patch -M -C --no-cover-letter -s -o $PRTMP/ $PREV
+
+FIXES=$(git show $IN | grep Fixes | awk '{print $2}')
+TAG=$(git describe $FIXES | cut -d'-' -f1)
+
+if [ -e "scripts/checkpatch.pl" ]; then
+	# We are in kernel repo
+	STABLE="Cc: <stable@vger.kernel.org> # $TAG"
+else
+	STABLE="Cc: <stable@linux-rdma.org> # $TAG"
+fi
+
+sed -i "/Fixes: /i $STABLE" $PRTMP/0001-*
+
+git reset --hard $PREV
+git am $PRTMP/*
+
+rm -rf $PRTMP
