@@ -31,6 +31,15 @@ function do_one {
 	echo "Redirecting the output to $REPORT_FILE"
 	pushd $PDIR &>> $REPORT_FILE
 	x checkpatch HEAD $PDIR &>> $REPORT_FILE
+	echo "===== ALL MOD COMPILE (subdir) =========" &>> $REPORT_FILE
+	make allmodconfig &>> $REPORT_FILE
+	make -s -j 4 drivers/infiniband/ drivers/net/ethernet/mellanox/ &>> $REPORT_FILE
+	echo "===== ALL YES COMPILE (subdir) =========" &>> $REPORT_FILE
+	make allyesconfig &>> $REPORT_FILE
+	make -s -j 4 drivers/infiniband/ drivers/net/ethernet/mellanox/ &>> $REPORT_FILE
+	echo "===== ALL NO COMPILE (subdir) =========" &>> $REPORT_FILE
+	make allnoconfig &>> $REPORT_FILE
+	make -s -j 4 drivers/infiniband/ drivers/net/ethernet/mellanox/ &>> $REPORT_FILE
 	cp $KCONFIG . &>> $REPORT_FILE
 	make olddefconfig &>> $REPORT_FILE
 	echo "===== FULL COMPILE =========" &>> $REPORT_FILE
