@@ -46,4 +46,6 @@ done
 
 checkpatch $PRTMP/
 git am $PRTMP/*
-rm -fr $PRTMP
+if [ $? -eq 0 ]; then
+	rm -fr $PRTMP
+fi
