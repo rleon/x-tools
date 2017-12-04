@@ -44,8 +44,9 @@ function do_one {
 	make olddefconfig &>> $REPORT_FILE
 	echo "===== FULL COMPILE =========" &>> $REPORT_FILE
 	make -s -j 4 &>> $REPORT_FILE
-	echo "===== SUB COMPILE =========" &>> $REPORT_FILE
-	make -s -j 4 W=1 drivers/infiniband/ drivers/net/ethernet/mellanox/ &>> $REPORT_FILE
+	# ClOSED, too many warnings
+	#echo "===== SUB COMPILE =========" &>> $REPORT_FILE
+	#make -s -j 4 W=1 drivers/infiniband/ drivers/net/ethernet/mellanox/ &>> $REPORT_FILE
 	echo "===== SMATCH =========" &>> $REPORT_FILE
 	make CHECK="$SMATCH -p=kernel" C=1 drivers/infiniband/ drivers/net/ethernet/mellanox/ -s -j 4 &>> $REPORT_FILE
 	echo "===== SPARSE =========" &>> $REPORT_FILE
