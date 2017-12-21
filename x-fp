@@ -40,8 +40,24 @@ if [ -d "$DIRECTORY" ]; then
 	exit 1
 fi
 
+TO="--to=Doug Ledford <dledford@redhat.com>, Jason Gunthorpe <jgg@mellanox.com>"
+
+# Generate CC-list
+CCLIST=$(mktemp)
+git show $START..$TAG | grep "\-by\:" | awk -F": " '{print $2}' | sort | uniq >> $CCLIST
+CC="--cc="
+LIST="linux-rdma@vger.kernel.org"
+while IFS= read -r var
+do
+	# Need to replace for actual author
+	if [[ $var != *"Romanovsky"* ]]; then
+		LIST=$LIST", "$var
+	fi
+done < "$CCLIST"
+CC=$CC$LIST
+
 mkdir -p $DIRECTORY/
-git format-patch -M -C --cover-letter --no-signoff --subject-prefix "PATCH $TARGET$VER" -o $DIRECTORY/ $START..$TAG
+git format-patch "$TO" "$CC" -M -C --cover-letter --no-signoff --subject-prefix "PATCH $TARGET$VER" -o $DIRECTORY/ $START..$TAG
 TITLE=$(git show tags/$TAG --oneline | head -n 3 | tail -n 1)
 sed -i "s/\*\*\* SUBJECT HERE \*\*\*/$TITLE/g" $DIRECTORY/0000-cover-letter.patch
 CONF=$(mktemp)
@@ -56,6 +72,7 @@ echo "---------------------------------------" >> $CONF
 sed -i "/\*\*\* BLURB HERE \*\*\*/r $CONF" $DIRECTORY/0000-cover-letter.patch
 sed -i "/\*\*\* BLURB HERE \*\*\*/d" $DIRECTORY/0000-cover-letter.patch
 checkpatch $DIRECTORY/
+rm -rf $CCLIST
 rm -rf $CONF
 rm -f $PATCHES_DIR/$TARGET/$TAG/latest
 ln -sr $DIRECTORY $PATCHES_DIR/$TARGET/$TAG/latest
