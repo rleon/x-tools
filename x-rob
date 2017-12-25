@@ -1,0 +1,40 @@
+#!/bin/bash
+#
+# Ad Reviewed-by for specific commit, used for cherry-picked
+
+if [ "$#" -gt 2 ]; then
+        echo "Usage: x rob <name> <commit sha1>"
+        exit 1
+fi
+
+export DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+. $DIR/env.config
+. $DIR/common
+
+if [ "$#" -gt 0 ]; then
+	ROB="Reviewed-by: $(grep $1 $MUTTAL | cut -d' ' -f 3-)"
+else
+	echo "Please provide name for Reviewed-by"
+	echo "The data is taken from $MUTTAL"
+	exit
+fi
+
+if [ "$#" -gt 1 ]; then
+	IN=$2
+else
+	IN="HEAD"
+fi
+
+PREV=$IN^1
+
+set -e
+PRTMP=$(mktemp -d)
+git format-patch -M -C --no-cover-letter -s -o $PRTMP/ $PREV
+
+sed -i -e '/^Issue:[ 0-9]*/Id' -e '/^Change-id:[ 0-9]*/Id' $PRTMP/0001-*
+sed -i "0,/Signed-off-by: /s//$ROB\nSigned-off-by: /" $PRTMP/0001-*
+
+git reset --hard $PREV
+git am -s $PRTMP/*
+
+rm -rf $PRTMP
