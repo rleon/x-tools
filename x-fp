@@ -46,7 +46,7 @@ TO="--to=Doug Ledford <dledford@redhat.com>, Jason Gunthorpe <jgg@mellanox.com>"
 CCLIST=$(mktemp)
 git show $START..$TAG | grep "\-by\:" | awk -F": " '{print $2}' | sort | uniq >> $CCLIST
 CC="--cc="
-LIST="linux-rdma@vger.kernel.org"
+LIST="RDMA mailing list <linux-rdma@vger.kernel.org>"
 while IFS= read -r var
 do
 	# Need to replace for actual author
