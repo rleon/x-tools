@@ -1,12 +1,20 @@
 #!/bin/bash
 #
 # Prepare topic for the upstream submission.
-# It works on rdma-rc/rdma-next branches only.
+# The flow is different for RDMA and other submissions
+# > 1 patch:
+#	- for rdma-rc/rdma-next needs tag to take cover letter from there
+#	- for other patches leaves cover letter empty, to be filled
+# == 1 patch:
+#	- don't create cover letter
 #
 
-if [ "$#" -lt 2 ] || [ "$#" -gt 3 ]; then
-        echo "Usage: x fp <start commit sha1> <tag> [ver]"
+if [ "$#" -gt 3 ]; then
+        echo "Usage: x fp <start commit sha1> <tag|end commit> [ver]"
 	echo "	<start commit sha1> should be in upstream branch"
+	echo "  <tag> is needed for rdma-rc/rdma-next for patch "
+	echo "	      series which requires cover letter"
+	echo "  <end commit> if omitted it will be single patch"
         exit 1
 fi
 
@@ -18,6 +26,11 @@ START=$1
 
 if [ "$#" -gt 1 ]; then
 	TAG=$2
+	SINGLE_COMMIT=0
+	COMMIT_RANGE="$START..$2"
+else
+	SINGLE_COMMIT=1
+	COMMIT_RANGE="$START"
 fi
 
 if [ "$#" -gt 2 ]; then
@@ -28,10 +41,38 @@ else
 	VER=""
 fi
 
+RDMA_TAG=1
 TARGET=$(git symbolic-ref HEAD | sed -e 's,.*/\(.*\),\1,')
 if [ "$TARGET" != "rdma-next" ] && [ "$TARGET" != "rdma-rc" ]; then
-	echo "It works on rdma-next or rdma-rc branches. Exiting...."
-	exit
+	RDMA_TAG=0
+
+	# My submission branches are named in the following format:
+	# rdma-rc or rdma-next for the submission queues
+	# target/feature-name - for the features
+	# target can be:
+	#    rc - rdma-core
+	#    rn - rdma-next
+	#    in - iproute2-next
+	#    ir - iproute2-rc
+	TAG=$TARGET
+	TARGET=$(git symbolic-ref HEAD | cut -d'/' -f 3)
+	if [ "$TARGET" == "rc" ]; then
+		TARGET="rdma-core"
+	fi
+	if [ "$TARGET" == "rn" ]; then
+		TARGET="rdma-next"
+	fi
+	if [ "$TARGET" == "in" ]; then
+		TARGET="iproute2-next"
+	fi
+	if [ "$TARGET" == "ir" ]; then
+		TARGET="iproute2-rc"
+	fi
+else
+	if [ $SINGLE_COMMIT -eq 1 ]; then
+		echo "The rdma-next and rdma-rc branches require tag. Exiting...."
+		exit
+	fi
 fi
 
 DIRECTORY="$PATCHES_DIR/$TARGET/$TAG/$VER_NUMB"
@@ -40,13 +81,28 @@ if [ -d "$DIRECTORY" ]; then
 	exit 1
 fi
 
-TO="--to=Doug Ledford <dledford@redhat.com>, Jason Gunthorpe <jgg@mellanox.com>"
+mkdir -p $DIRECTORY/
 
-# Generate CC-list
 CCLIST=$(mktemp)
-git show $START..$TAG | grep "\-by\:" | awk -F": " '{print $2}' | sort | uniq >> $CCLIST
+# Generate CC-list
+git show $COMMIT_RANGE | grep "\-by\:" | awk -F": " '{print $2}' | sort | uniq >> $CCLIST
+
+if [ "$TARGET" == "rdma-next" ] || [ "$TARGET" == "rdma-rc" ] || [ "$TARGET" == "rdma-core" ]; then
+	TO="--to=Doug Ledford <dledford@redhat.com>, Jason Gunthorpe <jgg@mellanox.com>"
+	LIST="RDMA mailing list <linux-rdma@vger.kernel.org>"
+fi
+if [ "$TARGET" == "iproute2-next" ]; then
+	TO="--to=David Ahern <dsahern@gmail.com>"
+	echo "Stephen Hemminger <stephen@networkplumber.org>" >> $CCLIST
+	LIST="netdev <netdev@vger.kernel.org>"
+fi
+if [ "$TARGET" == "iproute2-rc" ]; then
+	TO="--to=Stephen Hemminger <stephen@networkplumber.org>"
+	echo "David Ahern <dsahern@gmail.com>" >> $CCLIST
+	LIST="netdev <netdev@vger.kernel.org>"
+fi
+
 CC="--cc="
-LIST="RDMA mailing list <linux-rdma@vger.kernel.org>"
 while IFS= read -r var
 do
 	# Need to replace for actual author
@@ -56,21 +112,28 @@ do
 done < "$CCLIST"
 CC=$CC$LIST
 
-mkdir -p $DIRECTORY/
-git format-patch "$TO" "$CC" -M -C --cover-letter --no-signoff --subject-prefix "PATCH $TARGET$VER" -o $DIRECTORY/ $START..$TAG
-TITLE=$(git show tags/$TAG --oneline | head -n 3 | tail -n 1)
-sed -i "s/\*\*\* SUBJECT HERE \*\*\*/$TITLE/g" $DIRECTORY/0000-cover-letter.patch
-CONF=$(mktemp)
-git show --oneline  tags/$TAG | sed -e '/-----BEGIN PGP SIGNATURE-----/,$d' | tail -n +5 >> $CONF
+if [ $SINGLE_COMMIT -eq 1 ]; then
+	git format-patch "$TO" "$CC" -M -C --no-cover-letter --no-signoff --subject-prefix "PATCH $TARGET$VER" -o $DIRECTORY/ -1 $COMMIT_RANGE
+else
+	git format-patch "$TO" "$CC" -M -C --cover-letter --no-signoff --subject-prefix "PATCH $TARGET$VER" -o $DIRECTORY/ $COMMIT_RANGE
+fi
 
-echo "" >> $CONF
-echo "The patches are available in the git repository at:" >> $CONF
-echo "  git.kernel.org/pub/scm/linux/kernel/git/leon/linux-rdma.git tags/$TAG" >> $CONF
-echo "" >> $CONF
-echo "	Thanks" >> $CONF
-echo "---------------------------------------" >> $CONF
-sed -i "/\*\*\* BLURB HERE \*\*\*/r $CONF" $DIRECTORY/0000-cover-letter.patch
-sed -i "/\*\*\* BLURB HERE \*\*\*/d" $DIRECTORY/0000-cover-letter.patch
+if [ $RDMA_TAG -eq 1 ]; then
+	TITLE=$(git show tags/$TAG --oneline | head -n 3 | tail -n 1)
+	sed -i "s/\*\*\* SUBJECT HERE \*\*\*/$TITLE/g" $DIRECTORY/0000-cover-letter.patch
+	CONF=$(mktemp)
+	git show --oneline  tags/$TAG | sed -e '/-----BEGIN PGP SIGNATURE-----/,$d' | tail -n +5 >> $CONF
+
+	echo "" >> $CONF
+	echo "The patches are available in the git repository at:" >> $CONF
+	echo "  git.kernel.org/pub/scm/linux/kernel/git/leon/linux-rdma.git tags/$TAG" >> $CONF
+	echo "" >> $CONF
+	echo "	Thanks" >> $CONF
+	echo "---------------------------------------" >> $CONF
+	sed -i "/\*\*\* BLURB HERE \*\*\*/r $CONF" $DIRECTORY/0000-cover-letter.patch
+	sed -i "/\*\*\* BLURB HERE \*\*\*/d" $DIRECTORY/0000-cover-letter.patch
+fi
+
 checkpatch $DIRECTORY/
 rm -rf $CCLIST
 rm -rf $CONF
