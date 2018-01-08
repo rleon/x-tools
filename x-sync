@@ -1,0 +1,47 @@
+#!/bin/bash
+#
+# Synchronize local development machine with remote to be the same.
+# It respects the .gitignore inputs
+
+if [ "$#" -gt 1 ]; then
+        echo "Usage: x sync [pull|push]"
+	echo "  no arguments - check local vs. remote and print sync state"
+	echo "          pull - bring changes from remote"
+	echo "          push - send changes to remote"
+        exit 1
+fi
+
+export DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+. $DIR/env.config
+. $DIR/common
+
+if [[ "$#" -ne 0 && r"$1" != r"pull" && r"$1" != r"push" ]]; then
+	echo "Unsupported option. Exiting ..."
+	exit 1
+fi
+CMD=$1
+
+check_ssh_access $X_SYNC_REMOTE_SERVER
+if [ "$?" -ne 0 ]; then
+	echo "There is no SSH access to $X_SYNC_REMOTE_SERVER"
+	exit 1
+fi
+
+PROJECT=$( basename $PWD )
+if [[ r"$CMD" == r"" ]]; then
+	RET=$( rsync --dry-run -av --delete-after $PWD $X_SYNC_REMOTE_SERVER:$X_SYNC_REMOTE/ | grep $PROJECT | head -n 1 )
+	if [[ "$RET" != "$PROJECT/" ]]; then
+		echo "No need in sync, directories are identical."
+	else
+		echo "There is a difference between local and remote directories."
+	fi
+fi
+
+if [[ r"$CMD" == r"push" ]]; then
+	RET=$( rsync -ah --stats --delete-after $PWD $X_SYNC_REMOTE_SERVER:$X_SYNC_REMOTE/ | grep "total size" )
+	echo $RET
+fi
+
+if [[ r"$CMD" == r"pull" ]]; then
+	echo "Not implemented yet..."
+fi
