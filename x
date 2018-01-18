@@ -6,5 +6,9 @@ if [ "$#" -eq 0 ]; then
 	exit 1
 fi
 
-export DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-$DIR/x-$1 "${@:2}"
+if [ -f $HOME/.x-tools ]; then
+	export DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+	$DIR/x-$1 "${@:2}"
+else
+	echo "Please create $HOME/.x-tools configuration file"
+fi

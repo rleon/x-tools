@@ -1,0 +1,22 @@
+#!/bin/bash
+
+X_SRC=$HOME/src
+
+# x-fp
+PATCHES_DIR=$X_SRC/patches
+
+# x-checkpatch
+CHECKPATCH=$X_SRC/kernel/scripts/checkpatch.pl
+
+# x-checks
+SMATCH=$X_SRC/smatch/smatch
+SPARSE=$X_SRC/sparse/sparse
+KCONFIG=$X_SRC/linux-rdma/.config
+
+# x-rob
+MUTTAL=$HOME/.mutt/aliases
+
+# x-sync
+X_SYNC_LOCAL=$X_SRC
+X_SYNC_REMOTE=/images/src
+X_SYNC_REMOTE_SERVER="10.137.198.1"
