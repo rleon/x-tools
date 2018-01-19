@@ -9,8 +9,9 @@ if [ "$#" -gt 1 ]; then
         exit 1
 fi
 
+. $HOME/.x-tools
+
 export DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-. $DIR/env.config
 . $DIR/common
 
 if [ "$#" -gt 0 ]; then
