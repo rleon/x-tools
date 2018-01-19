@@ -1,6 +1,8 @@
 #!/bin/bash
 #
 
+REPLY=""
+
 function checkpatch() {
 	PDIR=$1
 	sed -i "/^Issue:[ 0-9]*/Id" $PDIR/*.patch
@@ -18,4 +20,17 @@ function checkpatch() {
 		[ "$file" != "$PDIR/0000-cover-letter.patch" ] || continue
 		perl $CHECKPATCH $IN_TREE --strict -q $file
 	done
+}
+
+function check_ssh_access() {
+	local ADDR=$1
+	set +e
+	ssh -q -o ConnectTimeout=2 $ADDR exit
+	local SSH_READY=$?
+	set -e
+	REPLY=$SSH_READY
+}
+
+function numb_of_cpus() {
+	REPLY=$( lscpu | grep "CPU(s): " | head -n 1 | awk '{print $2}' )
 }
