@@ -10,8 +10,9 @@ if [ "$#" -gt 1 ]; then
         exit 1
 fi
 
+. $HOME/.x-tools
+
 export DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-. $DIR/env.config
 . $DIR/common
 
 if [ "$#" -gt 0 ]; then
@@ -22,6 +23,9 @@ fi
 
 REPORT_FILE=$(mktemp)
 
+numb_of_cpus
+NUMB_OF_CPUS=$REPLY
+
 function do_one {
 	SHA1=$1
 	REPORT_FILE=$2
@@ -30,27 +34,42 @@ function do_one {
 	git worktree add $PDIR $SHA1
 	echo "Redirecting the output to $REPORT_FILE"
 	pushd $PDIR &>> $REPORT_FILE
+	VER=$( less $KCONFIG | head -n 3 | tail -n 1 )
+	echo $VER &>> $REPORT_FILE
+	echo "========================================" &>> $REPORT_FILE
+
 	x checkpatch HEAD $PDIR &>> $REPORT_FILE
 	echo "===== ALL MOD COMPILE (subdir) =========" &>> $REPORT_FILE
 	make allmodconfig &>> $REPORT_FILE
-	make -s -j 4 drivers/infiniband/ drivers/net/ethernet/mellanox/ &>> $REPORT_FILE
+	make -s -j $NUMB_OF_CPUS drivers/infiniband/ drivers/net/ethernet/mellanox/ &>> $REPORT_FILE
 	echo "===== ALL YES COMPILE (subdir) =========" &>> $REPORT_FILE
 	make allyesconfig &>> $REPORT_FILE
-	make -s -j 4 drivers/infiniband/ drivers/net/ethernet/mellanox/ &>> $REPORT_FILE
+	make -s -j $NUMB_OF_CPUS drivers/infiniband/ drivers/net/ethernet/mellanox/ &>> $REPORT_FILE
 	echo "===== ALL NO COMPILE (subdir) =========" &>> $REPORT_FILE
 	make allnoconfig &>> $REPORT_FILE
-	make -s -j 4 drivers/infiniband/ drivers/net/ethernet/mellanox/ &>> $REPORT_FILE
-	cp $KCONFIG . &>> $REPORT_FILE
+	make -s -j $NUMB_OF_CPUS drivers/infiniband/ drivers/net/ethernet/mellanox/ &>> $REPORT_FILE
+
+	make clean -j $NUMB_OF_CPUS &>> /dev/null
+	cp $KCONFIG .config &>> $REPORT_FILE
 	make olddefconfig &>> $REPORT_FILE
+
 	echo "===== FULL COMPILE =========" &>> $REPORT_FILE
-	make -s -j 4 &>> $REPORT_FILE
-	# ClOSED, too many warnings
+	make -s -j $NUMB_OF_CPUS &>> $REPORT_FILE
+
+	# Checkers runs with allyes in clean env
+	make clean -j $NUMB_OF_CPUS &>> /dev/null
+	make allyesconfig &>> /dev/null
+	# CLOSED, too many warnings
 	#echo "===== SUB COMPILE =========" &>> $REPORT_FILE
-	#make -s -j 4 W=1 drivers/infiniband/ drivers/net/ethernet/mellanox/ &>> $REPORT_FILE
+	#make -s -j $NUMB_OF_CPUS W=1 drivers/infiniband/ drivers/net/ethernet/mellanox/ &>> $REPORT_FILE
 	echo "===== SMATCH =========" &>> $REPORT_FILE
-	make CHECK="$SMATCH -p=kernel" C=1 drivers/infiniband/ drivers/net/ethernet/mellanox/ -s -j 4 &>> $REPORT_FILE
+	make -s -j $NUMB_OF_CPUS CHECK="$SMATCH -p=kernel" C=1 drivers/infiniband/ drivers/net/ethernet/mellanox/ &>> $REPORT_FILE
+
+	make clean -j $NUMB_OF_CPUS &>> /dev/null
+	make allyesconfig &>> /dev/null
 	echo "===== SPARSE =========" &>> $REPORT_FILE
-	make CHECK="$SPARSE" C=2 drivers/infiniband/ drivers/net/ethernet/mellanox/ -s -j 4  &>> $REPORT_FILE
+	make -s -j $NUMB_OF_CPUS CHECK="$SPARSE" C=2 drivers/infiniband/ drivers/net/ethernet/mellanox/ &>> $REPORT_FILE
+
 	popd &>> $REPORT_FILE
 	rm -rf $PDIR
 	git worktree prune
