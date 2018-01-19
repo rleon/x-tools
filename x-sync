@@ -11,8 +11,9 @@ if [ "$#" -gt 1 ]; then
         exit 1
 fi
 
+. $HOME/.x-tools
+
 export DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-. $DIR/env.config
 . $DIR/common
 
 if [[ "$#" -ne 0 && r"$1" != r"pull" && r"$1" != r"push" ]]; then
@@ -22,26 +23,39 @@ fi
 CMD=$1
 
 check_ssh_access $X_SYNC_REMOTE_SERVER
-if [ "$?" -ne 0 ]; then
+if [ "$REPLY" -ne 0 ]; then
 	echo "There is no SSH access to $X_SYNC_REMOTE_SERVER"
 	exit 1
 fi
 
 PROJECT=$( basename $PWD )
 if [[ r"$CMD" == r"" ]]; then
-	RET=$( rsync --dry-run -av --delete-after $PWD $X_SYNC_REMOTE_SERVER:$X_SYNC_REMOTE/ | grep $PROJECT | head -n 1 )
-	if [[ "$RET" != "$PROJECT/" ]]; then
-		echo "No need in sync, directories are identical."
-	else
-		echo "There is a difference between local and remote directories."
-	fi
+	echo "Not implemented yet ..."
+	#RET=$( rsync -avhz --dry-run --info=name0 --info=progress2 --delete-after $PWD $X_SYNC_REMOTE_SERVER::src/ | tail -n 1)
+	#echo $RET
+	#if [[ "$RET" != "$PROJECT/" ]]; then
+	#	echo "No need in sync, directories are identical."
+	#else
+	#	echo "There is a difference between local and remote directories."
+	#fi
 fi
 
 if [[ r"$CMD" == r"push" ]]; then
-	RET=$( rsync -ah --stats --delete-after $PWD $X_SYNC_REMOTE_SERVER:$X_SYNC_REMOTE/ | grep "total size" )
-	echo $RET
+	P_SRC=$PWD
+	P_DST="$X_SYNC_REMOTE_SERVER::src/"
+	K_SRC=".config"
+	K_DST="$X_SYNC_REMOTE_SERVER:/labhome/leonro/src/tools/configs/config-minimal"
 fi
 
 if [[ r"$CMD" == r"pull" ]]; then
-	echo "Not implemented yet..."
+	P_SRC="$X_SYNC_REMOTE_SERVER::src/$PWD"
+	P_DST="../"
+	K_SRC=" $X_SYNC_REMOTE_SERVER:/labhome/leonro/src/tools/configs/config-minimal"
+	K_DST=".config"
+fi
+
+rsync -avhz --info=name0 --info=progress2 --delete-after $P_SRC $P_DST
+CURRDIR=$( basename `pwd` )
+if [[ r"$CURRDIR" == r"kernel" ]]; then
+	scp $K_SRC $K_DST
 fi
