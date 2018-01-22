@@ -54,7 +54,7 @@ if [[ r"$CMD" == r"pull" ]]; then
 	K_DST=".config"
 fi
 
-rsync -avhz --info=name0 --info=progress2 --delete-after $P_SRC $P_DST
+rsync -avhz --info=name0 --info=progress2 --include='.git' --filter=':- .gitignore' --delete-after $P_SRC $P_DST
 CURRDIR=$( basename `pwd` )
 if [[ r"$CURRDIR" == r"kernel" ]]; then
 	scp $K_SRC $K_DST
