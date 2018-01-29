@@ -20,3 +20,9 @@ MUTTAL=$HOME/.mutt/aliases
 X_SYNC_LOCAL=$X_SRC
 X_SYNC_REMOTE=/images/src
 X_SYNC_REMOTE_SERVER="10.137.198.1"
+
+# x-build-image/x-run
+X_BI_DIR=/images/vm
+X_BI_VM_CACHE=/images/vm-cache
+X_BI_PASSWORD=secret
+X_BI_MOUNT=/images

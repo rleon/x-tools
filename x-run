@@ -1,0 +1,47 @@
+#!/bin/bash
+#
+# Run virt image
+
+if [ "$#" -ne 1 ]; then
+        echo "Usage: x run <name>"
+        exit 1
+fi
+
+. $HOME/.x-tools
+
+export DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+. $DIR/common
+
+USER=$(whoami)
+if [ "$USER" == "root" ]; then
+	echo "Please don't run this script as root, exiting ..."
+	exit
+fi
+
+VNAME=$1
+
+if [ ! -f "$X_BI_DIR/$VNAME.img" ]; then
+	echo "$X_BI_DIR/$VNAME.img doesn't exist, exiting ...."
+	exit
+fi
+
+DHCP_FILE=/.autodirect/LIT/SCRIPTS/DHCPD/list.html
+MAC=""
+
+if [ -f $DHCP_FILE ]; then
+	# We are running in MLNX network
+	MAC=`grep $VNAME $DHCP_FILE | cut -d";" -f2 | tr -d " "`
+	if [ "$MAC" == "" ]; then
+		echo "Didn't find $VNAME MAC in $DHCP_FILE"
+	fi
+fi
+
+if [ "$MAC" == "" ]; then
+	# Random generate
+	printf -v MAC "52:54:%02x:%02x:%02x:%02x" $(( $RANDOM & 0xff)) $(( $RANDOM & 0xff )) $(( $RANDOM & 0xff)) $(( $RANDOM & 0xff ))
+fi
+
+qemu-system-x86_64 -machine accel=kvm:tcg -cpu host -smp cpus=2 \
+	-m 1024 -drive file=$X_BI_DIR/$VNAME.img,format=raw,if=virtio \
+	-no-reboot -nographic -net bridge,br=br0 \
+	-net nic,model=virtio,macaddr=$MAC

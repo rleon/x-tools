@@ -1,0 +1,38 @@
+#!/bin/bash
+#
+# Build Fedora image
+
+if [ "$#" -ne 1 ]; then
+        echo "Usage: x build-image <name>"
+        exit 1
+fi
+
+. $HOME/.x-tools
+
+export DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+. $DIR/common
+
+USER=$(whoami)
+if [ "$USER" == "root" ]; then
+	echo "Please don't run this script as root, exiting ..."
+	exit
+fi
+
+VNAME=$1
+
+if [ -f "$X_BI_DIR/$VNAME.img" ]; then
+	echo "$X_BI_DIR/$VNAME.img is already exist, exiting ...."
+	exit
+fi
+
+PKG_TO_INSTAL="rdma-core,openssh,vim,pciutils,opensm,nfs-utils"
+export LIBGUESTFS_BACKEND_SETTINGS=network_bridge=br0
+sudo virt-builder fedora-27 -o $X_BI_DIR/$VNAME.img \
+	--root-password password:$X_BI_PASSWORD \
+	--hostname $VNAME --install $PKG_TO_INSTAL \
+	--cache $X_BI_VM_CACHE/ -m 1024 \
+	--selinux-relabel --size 6G \
+	--mkdir $X_BI_MOUNT
+
+GROUP=$(groups | awk '{print $1}')
+sudo chown $USER:$GROUP $X_BI_DIR/$VNAME.img
