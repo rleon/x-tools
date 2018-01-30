@@ -30,7 +30,7 @@ PRTMP=$(mktemp -d)
 git format-patch -M -C --no-cover-letter -s -o $PRTMP/ $PREV
 
 FIXES=$(git show $IN | grep Fixes | awk '{print $2}')
-TAG=$(git describe --contains $FIXES | cut -d'-' -f1)
+TAG=$(git l --author="Linus Torvalds" --no-merges $FIXES..HEAD | grep Linux | awk '{print $3}' | tail -1 | cut -d'-' -f1)
 
 if [ -e "scripts/checkpatch.pl" ]; then
 	# We are in kernel repo
