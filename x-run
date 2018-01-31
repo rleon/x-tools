@@ -41,7 +41,11 @@ if [ "$MAC" == "" ]; then
 	printf -v MAC "52:54:%02x:%02x:%02x:%02x" $(( $RANDOM & 0xff)) $(( $RANDOM & 0xff )) $(( $RANDOM & 0xff)) $(( $RANDOM & 0xff ))
 fi
 
+mass_vfio_bind $VNAME
+get_passthrough_line $VNAME
+PCI_IDS_PASS=$REPLY
 qemu-system-x86_64 -machine accel=kvm:tcg -cpu host -smp cpus=2 \
-	-m 1024 -drive file=$X_BI_DIR/$VNAME.img,format=raw,if=virtio \
+	-m 8096 -drive file=$X_BI_DIR/$VNAME.img,format=raw,if=virtio \
 	-no-reboot -nographic -net bridge,br=br0 \
-	-net nic,model=virtio,macaddr=$MAC
+	-net nic,model=virtio,macaddr=$MAC $PCI_IDS_PASS \
+	-virtfs local,path=$X_BI_MOUNT,mount_tag=host0,security_model=mapped,id=host0

@@ -34,3 +34,14 @@ function check_ssh_access() {
 function numb_of_cpus() {
 	REPLY=$( lscpu | grep "CPU(s): " | head -n 1 | awk '{print $2}' )
 }
+
+function get_passthrough_line() {
+	VM_MACHINE=$1
+	REPLY=$(grep $VM_MACHINE $DIR/machines.db | awk '{print " -device vfio-pci,host="$2} ' | tr -d '\n' )
+}
+
+function mass_vfio_bind() {
+	VM_MACHINE=$1
+	echo "Binding devices, it takes time ...."
+	REPLY=$(grep $VM_MACHINE $DIR/machines.db | awk '{print $2} ' | xargs -n1 sudo $DIR/vfio-pci-bind )
+}

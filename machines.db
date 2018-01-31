@@ -1,0 +1,15 @@
+# Machines 2-9 are installed using the IT script, machines 10-19 installed
+# with custom script. don't mix between them , because IT script doesn't know
+# how to handle them.
+#
+# Format:
+#	VM name 	PCI			Name
+gen-l-vrt-198-005	0000:01:00.0		"MT28800 Family [ConnectX-5 Ex]"
+gen-l-vrt-198-006	0000:01:00.1		"MT28800 Family [ConnectX-5 Ex]"
+gen-l-vrt-198-005	0000:06:00.0		"MT27700 Family [ConnectX-4]"
+gen-l-vrt-198-006	0000:06:00.1		"MT27700 Family [ConnectX-4]"
+gen-l-vrt-198-005	0000:81:00.0 		"MT28800 Family [ConnectX-5 Ex]"
+gen-l-vrt-198-006	0000:81:00.1 		"MT28800 Family [ConnectX-5 Ex]"
+gen-l-vrt-198-006	0000:86:00.0 		"MT27700 Family [ConnectX-4]"
+gen-l-vrt-198-006	0000:86:00.1 		"MT27700 Family [ConnectX-4]"
+gen-l-vrt-198-005	0000:8b:00.0		"MT27600 [Connect-IB]"
