@@ -25,13 +25,15 @@ if [ -f "$X_BI_DIR/$VNAME.img" ]; then
 	exit
 fi
 
-PKG_TO_INSTAL="rdma-core,openssh,vim,pciutils,opensm,nfs-utils"
+APP_LINE="/etc/fstab:host0 $X_BI_MOUNT 9p x-systemd.automount,x-systemd.device-timeout=10,trans=virtio,version=9p2000.L,rw 0 0"
+PKG_TO_INSTAL="rdma-core-devel,libibverbs-utils,openssh,vim,pciutils,opensm,nfs-utils"
 export LIBGUESTFS_BACKEND_SETTINGS=network_bridge=br0
 sudo virt-builder fedora-27 -o $X_BI_DIR/$VNAME.img \
 	--root-password password:$X_BI_PASSWORD \
 	--hostname $VNAME --install $PKG_TO_INSTAL \
-	--cache $X_BI_VM_CACHE/ -m 1024 \
+	--cache $X_BI_VM_CACHE/ -m 8096 \
 	--selinux-relabel --size 6G \
+	--append-line "$APP_LINE" \
 	--mkdir $X_BI_MOUNT
 
 GROUP=$(groups | awk '{print $1}')
