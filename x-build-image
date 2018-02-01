@@ -21,12 +21,27 @@ fi
 VNAME=$1
 
 if [ -f "$X_BI_DIR/$VNAME.img" ]; then
-	echo "$X_BI_DIR/$VNAME.img is already exist, exiting ...."
+	echo "$X_BI_DIR/$VNAME.img is already exist, exiting ..."
 	exit
 fi
 
 APP_LINE="/etc/fstab:host0 $X_BI_MOUNT 9p x-systemd.automount,x-systemd.device-timeout=10,trans=virtio,version=9p2000.L,rw 0 0"
 PKG_TO_INSTAL="rdma-core-devel,libibverbs-utils,openssh,vim,pciutils,opensm,nfs-utils"
+if [ -f "$HOME/.ssh/id_rsa.pub" ]; then
+	SSHDIR=$(mktemp -d)
+	cp $HOME/.ssh/id_rsa.pub $SSHDIR/
+	SSH_INJECT="root:file:$SSHDIR/id_rsa.pub"
+else
+	if [ -f "$HOME/.ssh/id_dsa.pub" ]; then
+		SSHDIR=$(mktemp -d)
+		cp $HOME/.ssh/id_dsa.pub $SSHDIR/
+		SSH_INJECT="root:file:$SSHDIR/id_dsa.pub"
+	else
+		echo "No ssh keys for $USER, exiting ..."
+		exit
+	fi
+fi
+
 export LIBGUESTFS_BACKEND_SETTINGS=network_bridge=br0
 sudo virt-builder fedora-27 -o $X_BI_DIR/$VNAME.img \
 	--root-password password:$X_BI_PASSWORD \
@@ -34,7 +49,9 @@ sudo virt-builder fedora-27 -o $X_BI_DIR/$VNAME.img \
 	--cache $X_BI_VM_CACHE/ -m 8096 \
 	--selinux-relabel --size 6G \
 	--append-line "$APP_LINE" \
-	--mkdir $X_BI_MOUNT
+	--mkdir $X_BI_MOUNT --ssh-inject "$SSH_INJECT" \
+	--ssh-inject root
 
 GROUP=$(groups | awk '{print $1}')
 sudo chown $USER:$GROUP $X_BI_DIR/$VNAME.img
+rm -rf $SSHDIR
