@@ -37,14 +37,24 @@ if [ -f $DHCP_FILE ]; then
 fi
 
 if [ "$MAC" == "" ]; then
-	# Random generate
+	# Random
 	printf -v MAC "52:54:%02x:%02x:%02x:%02x" $(( $RANDOM & 0xff)) $(( $RANDOM & 0xff )) $(( $RANDOM & 0xff)) $(( $RANDOM & 0xff ))
 fi
 
-mass_vfio_bind $VNAME
-get_passthrough_line $VNAME
+qemu_location $VNAME
+QEMU_BIN=$REPLY
+is_qemu $VNAME
+IS_QEMU=$REPLY
+
+if [ "$IS_QEMU" -eq 0 ]; then
+	get_simx_devices_line $VNAME
+else
+	mass_vfio_bind $VNAME
+	get_passthrough_line $VNAME
+fi
 PCI_IDS_PASS=$REPLY
-qemu-system-x86_64 -enable-kvm \
+
+$QEMU_BIN -enable-kvm \
 	-machine accel=kvm:tcg -cpu host -smp cpus=2 \
 	-m 8096 -drive file=$X_BI_DIR/$VNAME.img,format=raw,if=virtio \
 	-no-reboot -nographic -net bridge,br=br0 \

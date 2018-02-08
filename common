@@ -40,8 +40,28 @@ function get_passthrough_line() {
 	REPLY=$(grep $VM_MACHINE $DIR/machines.db | awk '{print " -device vfio-pci,host="$2} ' | tr -d '\n' )
 }
 
+function get_simx_devices_line() {
+	VM_MACHINE=$1
+	REPLY=$(grep $VM_MACHINE $DIR/machines.db | awk '{print " -device "$2} ' | tr -d '\n' )
+}
+
 function mass_vfio_bind() {
 	VM_MACHINE=$1
 	echo "Binding devices, it takes time ...."
 	REPLY=$(grep $VM_MACHINE $DIR/machines.db | awk '{print $2} ' | xargs -n1 sudo $DIR/vfio-pci-bind )
+}
+
+function qemu_location() {
+	VM_MACHINE=$1
+	IS_QEMU=$(grep $VM_MACHINE $DIR/machines.db | awk '/000/{print $2} ' | wc -l )
+	if [ "$IS_QEMU" -eq 0 ]; then
+		REPLY=$X_BI_SIMX
+	else
+		REPLY="qemu-system-x86_64"
+	fi
+}
+
+function is_qemu() {
+	VM_MACHINE=$1
+	REPLY=$(grep $VM_MACHINE $DIR/machines.db | awk '/000/{print $2} ' | wc -l )
 }
