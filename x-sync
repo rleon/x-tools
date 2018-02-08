@@ -43,14 +43,14 @@ fi
 if [[ r"$CMD" == r"push" ]]; then
 	P_SRC=$PWD
 	P_DST="$X_SYNC_REMOTE_SERVER::src/"
-	K_SRC=".config"
-	K_DST="$X_SYNC_REMOTE_SERVER:/labhome/leonro/src/tools/configs/config-minimal"
+	K_SRC="$DIR/kconfig/config-minimal"
+	K_DST="$X_SYNC_REMOTE_SERVER:src/kernel/.config"
 fi
 
 if [[ r"$CMD" == r"pull" ]]; then
 	P_SRC="$X_SYNC_REMOTE_SERVER::src/$PWD"
 	P_DST="../"
-	K_SRC=" $X_SYNC_REMOTE_SERVER:/labhome/leonro/src/tools/configs/config-minimal"
+	K_SRC=" $X_SYNC_REMOTE_SERVER:src/kernel/.config"
 	K_DST=".config"
 fi
 
