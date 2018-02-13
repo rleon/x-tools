@@ -24,16 +24,6 @@ set -e
 PRTMP=$(mktemp -d)
 git format-patch -M -C --no-cover-letter -s -o $PRTMP/ $PREV
 
-FIXES=$(git show $IN | grep Fixes | awk '{print $2}')
-TAG=$(git l --author="Linus Torvalds" --no-merges $FIXES..HEAD | grep Linux | awk '{print $3}' | tail -1 | cut -d'-' -f1)
-
-if [ -e "scripts/checkpatch.pl" ]; then
-	# We are in kernel repo
-	STABLE="Cc: <stable@vger.kernel.org> # $TAG"
-else
-	STABLE="Cc: <stable@linux-rdma.org> # $TAG"
-fi
-
 sed -i "/^Issue:[ 0-9]*/Id" $PRTMP/0001-*.patch
 sed -i "/^Change-id:[ 0-9]*/Id" $PRTMP/0001-*.patch
 
