@@ -20,24 +20,32 @@ fi
 
 PREV=$IN^1
 
-if [ "$(git show $IN | grep -c stable\@vger.kernel.org)" -gt 0 ]; then
-	echo "There is already stable@vger.kernel.org in the commit message. Exiting..."
-	exit
+set -e
+FIXES=$(git show $IN | grep Fixes | awk '{print $2}')
+
+get_project $PWD
+PROJECT=$REPLY
+
+if [ "$PROJECT" == "kernel" ]; then
+	if [ "$(git show $IN | grep -c stable\@vger.kernel.org)" -gt 0 ]; then
+		echo "There is already stable@vger.kernel.org in the commit message. Exiting..."
+		exit
+	fi
+	# We are in kernel repo
+	TAG=$(git l --author="Linus Torvalds" --no-merges $FIXES..HEAD | grep Linux | awk '{print $3}' | tail -1 | cut -d'-' -f1)
+	STABLE="Cc: <stable@vger.kernel.org> # $TAG"
 fi
 
-set -e
+if [ "$PROJECT" == "rdma-core" ]; then
+	if [ "$(git show $IN | grep -c stable\@linux-rdma.org)" -gt 0 ]; then
+		echo "There is already stable@linux-rdma.org in the commit message. Exiting..."
+		exit
+	fi
+	STABLE="Cc: <stable@linux-rdma.org>"
+fi
+
 PRTMP=$(mktemp -d)
 git format-patch -M -C --no-cover-letter -s -o $PRTMP/ $PREV
-
-FIXES=$(git show $IN | grep Fixes | awk '{print $2}')
-TAG=$(git l --author="Linus Torvalds" --no-merges $FIXES..HEAD | grep Linux | awk '{print $3}' | tail -1 | cut -d'-' -f1)
-
-if [ -e "scripts/checkpatch.pl" ]; then
-	# We are in kernel repo
-	STABLE="Cc: <stable@vger.kernel.org> # $TAG"
-else
-	STABLE="Cc: <stable@linux-rdma.org> # $TAG"
-fi
 
 sed -i "/Fixes: /i $STABLE" $PRTMP/0001-*
 
