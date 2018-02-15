@@ -61,4 +61,4 @@ $QEMU_BIN -enable-kvm \
 	-net nic,model=virtio,macaddr=$MAC $PCI_IDS_PASS \
 	-virtfs local,path=$X_BI_MOUNT,mount_tag=host0,security_model=mapped,id=host0 \
 	-kernel $X_SRC/kernel/arch/x86/boot/bzImage \
-	-append 'root=/dev/vda4 earlyprintk=serial,ttyS0,115200 console=tty0 console=ttyS0,115200 debug rw systemd.show_status=0 printk.devkmsg=off rootfstype=xfs audit=0 edd=off'
+	-append 'root=/dev/vda4 earlyprintk=serial,ttyS0,115200 console=tty0 console=ttyS0,115200 debug rw systemd.show_status=0 printk.devkmsg=off rootfstype=xfs audit=0 edd=off' | tee $X_BI_LOGS/$VNAME.serial

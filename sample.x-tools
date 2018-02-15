@@ -26,4 +26,5 @@ X_BI_DIR=/images/vm
 X_BI_VM_CACHE=/images/vm-cache
 X_BI_PASSWORD=secret
 X_BI_MOUNT=/images
+X_BI_LOGS=/images/logs
 X_BI_SIMX=$X_SRC/simx/x86_64-softmmu/qemu-system-x86_64
