@@ -52,7 +52,10 @@ sudo virt-builder fedora-27 -o $X_BI_DIR/$VNAME.img \
 	--mkdir $X_BI_MOUNT --ssh-inject "$SSH_INJECT" \
 	--ssh-inject root \
 	--copy-in $DIR/systemd/journald.conf:/etc/systemd/ \
-	--copy-in $DIR/systemd/system.conf:/etc/systemd/
+	--copy-in $DIR/systemd/system.conf:/etc/systemd/ \
+	--firstboot-command 'dnf -y --best update' \
+	--firstboot-command 'systemctl enable opensm' \
+	--firstboot-command 'systemctl start opensm'
 
 GROUP=$(groups | awk '{print $1}')
 sudo chown $USER:$GROUP $X_BI_DIR/$VNAME.img
