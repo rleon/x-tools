@@ -23,7 +23,7 @@ fi
 export DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 . $DIR/common
 
-START=$1
+START=$(git rev-parse --verify --short=12 $1)
 
 if [ "$#" -gt 1 ]; then
 	TAG=$2
@@ -42,7 +42,33 @@ else
 	VER=""
 fi
 
-RDMA_TAG=1
+RDMA_TAG=0
+
+get_project $PWD
+PROJECT=$REPLY
+
+if [ "$PROJECT" == "rdma-core" ]; then
+	TARGET="rdma-core"
+fi
+
+if [ "$PROJECT" == "kernel" ]; then
+	TARGET=$(git symbolic-ref --short HEAD)
+	if [ "$TARGET" != "rdma-next" ] && [ "$TARGET" != "rdma-rc" ]; then
+		# Let's put default for now
+		TARGET="rdma-next"
+	fi
+fi
+
+if [ "$PROJECT" == "iproute" ]; then
+	TARGET=$(git symbolic-ref --short HEAD)
+	if [ "$TARGET" != "iproute2-next" ] && [ "$TARGET" != "iproute2-rc" ]; then
+		# Let's put default for now
+		TARGET="iproute2-next"
+	fi
+fi
+
+if [ "a" == "b" ]; then
+	closed
 TARGET=$(git symbolic-ref HEAD | sed -e 's,.*/\(.*\),\1,')
 if [ "$TARGET" != "rdma-next" ] && [ "$TARGET" != "rdma-rc" ]; then
 	RDMA_TAG=0
@@ -75,8 +101,9 @@ else
 		exit
 	fi
 fi
+fi
 
-DIRECTORY="$PATCHES_DIR/$TARGET/$TAG/$VER_NUMB"
+DIRECTORY="$PATCHES_DIR/$TARGET/$START/$VER_NUMB"
 if [ -d "$DIRECTORY" ]; then
 	echo "$DIRECTORY exists, exiting ...."
 	exit 1
@@ -95,11 +122,13 @@ fi
 if [ "$TARGET" == "iproute2-next" ]; then
 	TO="--to=David Ahern <dsahern@gmail.com>"
 	echo "Stephen Hemminger <stephen@networkplumber.org>" >> $CCLIST
+	echo "RDMA mailing list <linux-rdma@vger.kernel.org>" >> $CCLIST
 	LIST="netdev <netdev@vger.kernel.org>"
 fi
 if [ "$TARGET" == "iproute2-rc" ]; then
 	TO="--to=Stephen Hemminger <stephen@networkplumber.org>"
 	echo "David Ahern <dsahern@gmail.com>" >> $CCLIST
+	echo "RDMA mailing list <linux-rdma@vger.kernel.org>" >> $CCLIST
 	LIST="netdev <netdev@vger.kernel.org>"
 fi
 
@@ -138,5 +167,5 @@ fi
 checkpatch $DIRECTORY/
 rm -rf $CCLIST
 rm -rf $CONF
-rm -f $PATCHES_DIR/$TARGET/$TAG/latest
-ln -sr $DIRECTORY $PATCHES_DIR/$TARGET/$TAG/latest
+rm -f $DIRECTORY/latest
+ln -sr $DIRECTORY $DIRECTORY/../latest

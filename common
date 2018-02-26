@@ -3,16 +3,43 @@
 
 REPLY=""
 
+function get_project() {
+	PDIR=$1
+	if [ -e "$PDIR/scripts/faddr2line" ]; then
+		REPLY="kernel"
+		return
+	fi
+
+	if [ -e "$PDIR/buildlib/cbuild" ]; then
+		REPLY="rdma-core"
+		return
+	fi
+
+	if [ -e "$PDIR/rdma/rdma.h" ]; then
+		REPLY="iproute"
+		return
+	fi
+
+	if [ -e "$PDIR/x" ]; then
+		REPLY="x-tools"
+		return
+	fi
+
+	REPLY=""
+}
+
 function checkpatch() {
 	PDIR=$1
 	sed -i "/^Issue:[ 0-9]*/Id" $PDIR/*.patch
 	sed -i "/^Change-id:[ 0-9]*/Id" $PDIR/*.patch
 
-	if [ -e "scripts/checkpatch.pl" ]; then
-		# We are in kernel repo
-		IN_TREE=""
-	else
+	get_project $PDIR
+	PROJECT=$REPLY
+
+	if [ "$PROJECT" != "kernel" ]; then
 		IN_TREE="--no-tree --ignore PREFER_KERNEL_TYPES,FILE_PATH_CHANGES,EXECUTE_PERMISSIONS"
+	else
+		IN_TREE=""
 	fi
 
 	for file in $PDIR/*.patch; do
@@ -66,27 +93,4 @@ function is_qemu() {
 	REPLY=$(grep $VM_MACHINE $DIR/machines.db | awk '/000/{print $2} ' | wc -l )
 }
 
-function get_project() {
-	PDIR=$1
-	if [ -e "$PDIR/scripts/faddr2line" ]; then
-		REPLY="kernel"
-		return
-	fi
 
-	if [ -e "$PDIR/buildlib/cbuild" ]; then
-		REPLY="rdma-core"
-		return
-	fi
-
-	if [ -e "$PDIR/rdma/rdma.h" ]; then
-		REPLY="iproute"
-		return
-	fi
-
-	if [ -e "$PDIR/x" ]; then
-		REPLY="x-tools"
-		return
-	fi
-
-	REPLY=""
-}
