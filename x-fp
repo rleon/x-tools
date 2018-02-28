@@ -23,13 +23,14 @@ fi
 export DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 . $DIR/common
 
-START=$(git rev-parse --verify --short=12 $1)
 
 if [ "$#" -gt 1 ]; then
+	START=$(git rev-parse --verify --short=12 $1)
 	TAG=$2
 	SINGLE_COMMIT=0
 	COMMIT_RANGE="$START..$2"
 else
+	START=$(git rev-parse --verify --short=12 HEAD)
 	SINGLE_COMMIT=1
 	COMMIT_RANGE="$START"
 fi
