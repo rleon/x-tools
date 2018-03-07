@@ -118,7 +118,14 @@ mkdir -p $DIRECTORY/
 
 CCLIST=$(mktemp)
 # Generate CC-list
-git show $COMMIT_RANGE | grep "\-by\:" | awk -F": " '{print $2}' | sort | uniq >> $CCLIST
+git show -s $COMMIT_RANGE | grep "\-by\:" | awk -F": " '{print $2}' | sort | uniq >> $CCLIST
+
+# Add author of "Fixes" commit
+COUNT_FIXES=$(git show -s $COMMIT_RANGE | grep "Fixes: " | awk '{print $2}' | sort | uniq | wc -l)
+if [ $COUNT_FIXES -ne 0 ]; then
+	git show -s $COMMIT_RANGE | grep "Fixes: " | awk '{print $2}' | sort | uniq | xargs git show --pretty=format:"%aN <%aE>" -s >> $CCLIST
+	echo "" >> $CCLIST
+fi
 
 if [ "$TARGET" == "rdma-next" ] || [ "$TARGET" == "rdma-rc" ] || [ "$TARGET" == "rdma-core" ]; then
 	TO="--to=Doug Ledford <dledford@redhat.com>, Jason Gunthorpe <jgg@mellanox.com>"
