@@ -30,7 +30,11 @@ if [ "$#" -gt 1 ]; then
 	SINGLE_COMMIT=0
 	COMMIT_RANGE="$START..$2"
 else
-	START=$(git rev-parse --verify --short=12 HEAD)
+	if [ "$#" -eq 1 ]; then
+		START=$(git rev-parse --verify --short=12 $1)
+	else
+		START=$(git rev-parse --verify --short=12 HEAD)
+	fi
 	SINGLE_COMMIT=1
 	COMMIT_RANGE="$START"
 fi
