@@ -118,7 +118,7 @@ mkdir -p $DIRECTORY/
 
 CCLIST=$(mktemp)
 # Generate CC-list
-git show -s $COMMIT_RANGE | grep "\-by\:" | awk -F": " '{print $2}' | sort | uniq >> $CCLIST
+git show -s $COMMIT_RANGE | grep "\-by\:" | awk -F": " '{print $2}' >> $CCLIST
 
 # Add author of "Fixes" commit
 COUNT_FIXES=$(git show -s $COMMIT_RANGE | grep "Fixes: " | awk '{print $2}' | sort | uniq | wc -l)
@@ -143,6 +143,8 @@ if [ "$TARGET" == "iproute2-rc" ]; then
 	echo "RDMA mailing list <linux-rdma@vger.kernel.org>" >> $CCLIST
 	LIST="netdev <netdev@vger.kernel.org>"
 fi
+
+sort -uo $CCLIST $CCLIST
 
 CC="--cc="
 while IFS= read -r var
