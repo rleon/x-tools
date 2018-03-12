@@ -48,7 +48,7 @@ if [[ r"$CMD" == r"push" ]]; then
 fi
 
 if [[ r"$CMD" == r"pull" ]]; then
-	P_SRC="$X_SYNC_REMOTE_SERVER::src/$PWD"
+	P_SRC="$X_SYNC_REMOTE_SERVER::src/$PROJECT"
 	P_DST="../"
 	K_SRC=" $X_SYNC_REMOTE_SERVER:src/kernel/.config"
 	K_DST=".config"
