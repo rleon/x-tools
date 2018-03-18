@@ -80,8 +80,8 @@ function mass_vfio_bind() {
 
 function qemu_location() {
 	VM_MACHINE=$1
-	IS_QEMU=$(grep $VM_MACHINE $DIR/machines.db | awk '/000/{print $2} ' | wc -l )
-	if [ "$IS_QEMU" -eq 0 ]; then
+	IS_QEMU=$(grep $VM_MACHINE $DIR/machines.db | awk '{print $3} ' | tail -n 1)
+	if [ "$IS_QEMU" == "simx" ]; then
 		REPLY=$X_BI_SIMX
 	else
 		REPLY="qemu-system-x86_64"
@@ -90,7 +90,15 @@ function qemu_location() {
 
 function is_qemu() {
 	VM_MACHINE=$1
-	REPLY=$(grep $VM_MACHINE $DIR/machines.db | awk '/000/{print $2} ' | wc -l )
+	REPLY=$(grep $VM_MACHINE $DIR/machines.db | awk '{print $3} ' | tail -n 1)
+	if [ "$REPLY" == "simx" ]; then
+		REPLY=0
+	else
+		REPLY=1
+	fi
 }
 
-
+function get_image_type() {
+	VM_MACHINE=$1
+	REPLY=$(grep $VM_MACHINE $DIR/machines.db | awk '{print $3} ' | tail -n 1)
+}
