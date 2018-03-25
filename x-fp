@@ -183,5 +183,5 @@ rm -rf $CCLIST
 rm -rf $CONF
 rm -f $DIRECTORY/latest
 ln -sr $DIRECTORY $DIRECTORY/../latest
-echo "---------------------------------------"
-echo "git send-upstream $TARGET/$START/$VER_NUMB/*"
+echo "-----------------------------------------------------------------------"
+echo "x sync pull && git send-upstream $TARGET/$START/$VER_NUMB/*"
