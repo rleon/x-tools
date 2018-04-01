@@ -13,7 +13,7 @@ export DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 . $DIR/common
 
 if [ "$#" -gt 0 ]; then
-	ROB="Reviewed-by: $(grep $1 $MUTTAL | cut -d' ' -f 3-)"
+	ROB="Reviewed-by: $(grep "alias $1" $MUTTAL | cut -d' ' -f 3-)"
 else
 	echo "Please provide name for Reviewed-by"
 	echo "The data is taken from $MUTTAL"
