@@ -102,3 +102,22 @@ function get_image_type() {
 	VM_MACHINE=$1
 	REPLY=$(grep $VM_MACHINE $DIR/machines.db | awk '{print $3} ' | tail -n 1)
 }
+
+# Check if SSH is ready
+# 255 means connection is not possible
+# 0 means connection is possible
+function block_till_ssh_is_ready() {
+	SERVER=$1
+	echo "Block till $SERVER SSH is ready"
+	set +e
+	ssh -q root@$SERVER exit
+	SSH_READY=$?
+	set -e
+	while [ $SSH_READY -ne 0 ]; do
+		set +e
+		ssh -q root@$SERVER exit
+		SSH_READY=$?
+		set -e
+		sleep 5s
+	done
+}
