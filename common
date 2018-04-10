@@ -121,3 +121,37 @@ function block_till_ssh_is_ready() {
 		sleep 5s
 	done
 }
+
+function get_arg_type() {
+	ARG=$1
+	IS_NUMBER=0
+	case $ARG in
+		''|*[!0-9]*) IS_NUMBER=0 ;;
+		*) IS_NUMBER=1 ;;
+	esac
+
+	if [ $IS_NUMBER -eq 0 ]; then
+		git show-ref --tags -q $ARG
+		if [ $? -eq 0 ]; then
+			REPLY="TAG"
+			return
+		fi
+
+		git show-ref --heads -q $ARG
+		if [ $? -eq 0 ]; then
+			REPLY="BRANCH"
+			return
+		fi
+
+		git rev-parse --verify -q $ARG > /dev/null
+		if [ $? -eq 0 ]; then
+			REPLY="SHA"
+			return
+		fi
+	else
+		REPLY="VER"
+		return
+	fi
+
+	REPLY=""
+}
