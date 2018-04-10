@@ -23,28 +23,102 @@ fi
 export DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 . $DIR/common
 
-
-if [ "$#" -gt 1 ]; then
-	START=$(git rev-parse --verify --short=12 $1)
-	TAG=$2
-	SINGLE_COMMIT=0
-	COMMIT_RANGE="$START..$2"
-else
-	if [ "$#" -eq 1 ]; then
-		START=$(git rev-parse --verify --short=12 $1)
-	else
-		START=$(git rev-parse --verify --short=12 HEAD)
-	fi
+if [ "$#" -eq 0 ]; then
+	START=$(git rev-parse --verify --short=12 HEAD)
 	SINGLE_COMMIT=1
+	COMMIT_RANGE="$START"
+	VER_NUMB=0
+	VER=""
+fi
+
+if [ "$#" -eq 1 ]; then
+	get_arg_type $1
+	SINGLE_COMMIT=1
+	if [ r"$REPLY" == r"SHA" ]; then
+		START=$(git rev-parse --verify --short=12 $1)
+		VER_NUMB=0
+		VER=""
+	fi
+
+	if [ r"$REPLY" == r"VER" ]; then
+		START=$(git rev-parse --verify --short=12 HEAD)
+		VER_NUMB=$1
+		VER=" v$VER_NUMB"
+	fi
+	if [[ r"$REPLY" != r"SHA" && r"$REPLY" != r"VER" ]]; then
+		echo "Unsupported option. Exiting ..."
+		exit
+	fi
 	COMMIT_RANGE="$START"
 fi
 
-if [ "$#" -gt 2 ]; then
-	VER_NUMB=$3
-	VER=" v$VER_NUMB"
-else
-	VER_NUMB=0
-	VER=""
+if [ "$#" -eq 2 ]; then
+	get_arg_type $1
+	if [ r"$REPLY" == r"SHA" ]; then
+		START=$(git rev-parse --verify --short=12 $1)
+	else
+		echo "Unsupported option. Exiting ..."
+		exit
+	fi
+
+	get_arg_type $2
+	if [ r"$REPLY" == r"SHA" ]; then
+		END=$(git rev-parse --verify --short=12 $2)
+		VER_NUMB=0
+		VER=""
+		COMMIT_RANGE="$START..$END"
+		if [ $(git rev-list --count $COMMIT_RANGE) -eq 1 ]; then
+			SINGLE_COMMIT=1
+		else
+			SINGLE_COMMIT=0
+		fi
+	fi
+
+	if [ r"$REPLY" == r"VER" ]; then
+		VER_NUMB=$2
+		VER=" v$VER_NUMB"
+		COMMIT_RANGE="$START"
+		SINGLE_COMMIT=1
+	fi
+
+	if [[ r"$REPLY" != r"SHA" && r"$REPLY" != r"VER" ]]; then
+		echo "Unsupported option. Exiting ..."
+		exit
+	fi
+fi
+
+if [ "$#" -eq 3 ]; then
+	get_arg_type $1
+	SINGLE_COMMIT=0
+	if [ r"$REPLY" == r"SHA" ]; then
+		START=$(git rev-parse --verify --short=12 $1)
+	else
+		echo "Unsupported option. Exiting ..."
+		exit
+	fi
+
+	get_arg_type $2
+	if [ r"$REPLY" == r"SHA" ]; then
+		END=$(git rev-parse --verify --short=12 $2)
+		COMMIT_RANGE="$START..$END"
+		if [ $(git rev-list --count $COMMIT_RANGE) -eq 1 ]; then
+			SINGLE_COMMIT=1
+		fi
+	else
+		echo "Unsupported option. Exiting ..."
+		exit
+	fi
+
+	get_arg_type $3
+	if [ r"$REPLY" == r"VER" ]; then
+		VER_NUMB=$3
+		VER=" v$VER_NUMB"
+	fi
+
+	if [ r"$REPLY" != r"VER" ]; then
+		echo "Unsupported option. Exiting ..."
+		exit
+	fi
 fi
 
 RDMA_TAG=0
