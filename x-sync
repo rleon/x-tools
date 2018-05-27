@@ -44,18 +44,19 @@ if [[ r"$CMD" == r"push" ]]; then
 	P_SRC=$PWD
 	P_DST="$X_SYNC_REMOTE_SERVER::src/"
 	K_SRC="$DIR/kconfig/config-minimal"
-	K_DST="$X_SYNC_REMOTE_SERVER:src/kernel/.config"
+	K_DST="$X_SYNC_REMOTE_SERVER::src/kernel/.config"
 fi
 
 if [[ r"$CMD" == r"pull" ]]; then
 	P_SRC="$X_SYNC_REMOTE_SERVER::src/$PROJECT"
 	P_DST="../"
-	K_SRC=" $X_SYNC_REMOTE_SERVER:src/kernel/.config"
+	K_SRC=" $X_SYNC_REMOTE_SERVER::src/kernel/.config"
 	K_DST=".config"
 fi
 
 rsync -avhz --info=name0 --info=progress2 --include='.git' --filter=':- .gitignore' --delete-after $P_SRC $P_DST
 CURRDIR=$( basename `pwd` )
 if [[ r"$CURRDIR" == r"kernel" ]]; then
-	scp $K_SRC $K_DST
+	rsync $K_SRC $K_DST
+	git reset --hard HEAD
 fi
