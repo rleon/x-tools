@@ -71,7 +71,7 @@ function change_target() {
 		[ "$file" != "$PDIR/0000-cover-letter.patch" ] || continue
 		IS_RDMA_NEXT_TARGET=$(grep -c "PATCH rdma-next" $file)
 		if [ $IS_RDMA_NEXT_TARGET -eq 1 ]; then
-			IS_MLX5_NEXT_TARGET=$($GET_MAINTAINER $file | head -1 | grep Saeed -c)
+			IS_MLX5_NEXT_TARGET=$($GET_MAINTAINER --email --nol --nos --nosubsystem --noroles $file | grep Saeed -c)
 			if [ $IS_MLX5_NEXT_TARGET -eq 1 ]; then
 				FOUND=1
 				echo "REPLACED: $file"
