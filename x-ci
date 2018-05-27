@@ -3,7 +3,7 @@
 # Run full CI for specific commit
 
 if [ "$#" -gt 1 ]; then
-        echo "Usage: x checks <commit sha1>"
+        echo "Usage: x ci <commit sha1>"
         exit 1
 fi
 
@@ -12,19 +12,33 @@ fi
 export DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 . $DIR/common
 
-if [ "$#" -gt 0 ]; then
-	SHA1=$1
-else
-	SHA1=$(git rev-parse HEAD)
-fi
+
+# Allow to run without parameters from any place
+SHA1="HEAD"
+#if [ "$#" -gt 0 ]; then
+#	SHA1=$1
+#else
+#	SHA1=$(git rev-parse HEAD)
+#fi
 
 REPORT_FILE=$(mktemp)
 
 function do_one {
 	local SHA1=$1
-	ssh leonro@dev-l-vrt-151.lab.mtl.com "nohup sh /labhome/leonro/src/tools/ci.runner $SHA1 &>/dev/null &"
+	local VM=$2
+	x run $VM &
+	sleep 1m
+	block_till_ssh_is_ready $VM
+	set +e
+	ssh root@$VM /images/ci/shutdown
+	set -e
+	wait
 }
 
-#git remote update
-#git push backup --mirror
-do_one $SHA1
+do_one $SHA1 nps-server-14-015
+do_one $SHA1 nps-server-14-017
+do_one $SHA1 nps-server-14-016
+do_one $SHA1 nps-server-14-018
+do_one $SHA1 nps-server-14-019
+do_one $SHA1 nps-server-14-020
+#wait
