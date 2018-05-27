@@ -45,7 +45,9 @@ for file in $PRTMP/*.patch; do
 	sed -i "0,/Signed-off-by: Leon Romanovsky <leon@kernel.org>/s//$ROB\nSigned-off-by: Leon Romanovsky <leon@kernel.org>/" $file
 done
 
-checkpatch $PRTMP/
+get_project $PWD
+PROJECT=$REPLY
+checkpatch $PRTMP/ $PROJECT
 git am $PRTMP/*
 if [ $? -eq 0 ]; then
 	rm -fr $PRTMP

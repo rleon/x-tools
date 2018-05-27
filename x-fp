@@ -126,61 +126,8 @@ RDMA_TAG=0
 get_project $PWD
 PROJECT=$REPLY
 
-if [ "$PROJECT" == "rdma-core" ]; then
-	TARGET="rdma-core"
-fi
-
-if [ "$PROJECT" == "kernel" ]; then
-	TARGET=$(git symbolic-ref --short HEAD)
-	if [ "$TARGET" != "rdma-next" ] && [ "$TARGET" != "rdma-rc" ]; then
-		# Let's put default for now
-		TARGET="rdma-next"
-	fi
-fi
-
-if [ "$PROJECT" == "iproute" ]; then
-	TARGET=$(git symbolic-ref --short HEAD)
-	if [ "$TARGET" != "iproute2-next" ] && [ "$TARGET" != "iproute2-rc" ]; then
-		# Let's put default for now
-		TARGET="iproute2-next"
-	fi
-fi
-
-if [ "a" == "b" ]; then
-	closed
-TARGET=$(git symbolic-ref HEAD | sed -e 's,.*/\(.*\),\1,')
-if [ "$TARGET" != "rdma-next" ] && [ "$TARGET" != "rdma-rc" ]; then
-	RDMA_TAG=0
-
-	# My submission branches are named in the following format:
-	# rdma-rc or rdma-next for the submission queues
-	# target/feature-name - for the features
-	# target can be:
-	#    rc - rdma-core
-	#    rn - rdma-next
-	#    in - iproute2-next
-	#    ir - iproute2-rc
-	TAG=$TARGET
-	TARGET=$(git symbolic-ref HEAD | cut -d'/' -f 3)
-	if [ "$TARGET" == "rc" ]; then
-		TARGET="rdma-core"
-	fi
-	if [ "$TARGET" == "rn" ]; then
-		TARGET="rdma-next"
-	fi
-	if [ "$TARGET" == "in" ]; then
-		TARGET="iproute2-next"
-	fi
-	if [ "$TARGET" == "ir" ]; then
-		TARGET="iproute2-rc"
-	fi
-else
-	if [ $SINGLE_COMMIT -eq 1 ]; then
-		echo "The rdma-next and rdma-rc branches require tag. Exiting...."
-		exit
-	fi
-fi
-fi
+get_target $PROJECT
+TARGET=$REPLY
 
 DIRECTORY="$PATCHES_DIR/$TARGET/$START/$VER_NUMB"
 if [ -d "$DIRECTORY" ]; then
@@ -252,7 +199,8 @@ if [ $RDMA_TAG -eq 1 ]; then
 	sed -i "/\*\*\* BLURB HERE \*\*\*/d" $DIRECTORY/0000-cover-letter.patch
 fi
 
-checkpatch $DIRECTORY/
+change_target $DIRECTORY/ $PROJECT
+checkpatch $DIRECTORY/ $PROJECT
 rm -rf $CCLIST
 rm -rf $CONF
 rm -f $DIRECTORY/latest

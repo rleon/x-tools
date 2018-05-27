@@ -28,13 +28,74 @@ function get_project() {
 	REPLY=""
 }
 
+function get_target() {
+	PROJECT=$1
+	TARGET=""
+	if [ "$PROJECT" == "rdma-core" ]; then
+		TARGET="rdma-core"
+	fi
+
+	if [ "$PROJECT" == "kernel" ]; then
+		TARGET=$(git symbolic-ref --short HEAD)
+		if [ "$TARGET" != "rdma-next" ] && [ "$TARGET" != "rdma-rc" ]; then
+			# Let's put default for now
+			TARGET="rdma-next"
+		fi
+	fi
+
+	if [ "$PROJECT" == "iproute" ]; then
+		TARGET=$(git symbolic-ref --short HEAD)
+		if [ "$TARGET" != "iproute2-next" ] && [ "$TARGET" != "iproute2-rc" ]; then
+			# Let's put default for now
+			TARGET="iproute2-next"
+		fi
+	fi
+
+	REPLY=$TARGET
+}
+
+function change_target() {
+	# Replace rdma-next to be mlx5-next
+	PDIR=$1
+	PROJECT=$2
+
+	if [ "$PROJECT" != "kernel" ]; then
+		return
+	fi
+
+	FOUND=0
+
+	echo "------------------ GET_MAINTAINER checks ------------------"
+	for file in $PDIR/*.patch; do
+		[ -e "$file" ] || continue
+		[ "$file" != "$PDIR/0000-cover-letter.patch" ] || continue
+		IS_RDMA_NEXT_TARGET=$(grep -c "PATCH rdma-next" $file)
+		if [ $IS_RDMA_NEXT_TARGET -eq 1 ]; then
+			IS_MLX5_NEXT_TARGET=$($GET_MAINTAINER $file | head -1 | grep Saeed -c)
+			if [ $IS_MLX5_NEXT_TARGET -eq 1 ]; then
+				FOUND=1
+				echo "REPLACED: $file"
+				sed -i -e 's/PATCH rdma-next/PATCH mlx5-next/g' $file
+				sed -i -e '/Cc: RDMA mailing list/s/$/, Saeed Mahameed <saeedm@mellanox.com>, linux-netdev <netdev@vger.kernel.org>/' $file
+			fi
+		fi
+	done
+
+	if [ $FOUND -eq 1 ]; then
+	       if [ -f "$PDIR/0000-cover-letter.patch" ]; then
+		      # It is important for netdev to see it too
+		      sed -i -e '/Cc: RDMA mailing list/s/$/, Saeed Mahameed <saeedm@mellanox.com>, linux-netdev <netdev@vger.kernel.org>/' $PDIR/0000-cover-letter.patch
+	      fi
+	fi
+	echo "------------------ GET_MAINTAINER checks ends ------------"
+}
+
 function checkpatch() {
 	PDIR=$1
+	PROJECT=$2
+
 	sed -i "/^Issue:[ 0-9]*/Id" $PDIR/*.patch
 	sed -i "/^Change-id:[ 0-9]*/Id" $PDIR/*.patch
-
-	get_project $PDIR
-	PROJECT=$REPLY
 
 	if [ "$PROJECT" != "kernel" ]; then
 		IN_TREE="--no-tree --ignore PREFER_KERNEL_TYPES,FILE_PATH_CHANGES,EXECUTE_PERMISSIONS"

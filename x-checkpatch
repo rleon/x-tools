@@ -28,7 +28,10 @@ else
 fi
 
 git format-patch -M -C -1 -o $PDIR/ $SHA1
-checkpatch $PDIR
+
+get_project $PWD
+PROJECT=$REPLY
+checkpatch $PDIR $PROJECT
 
 if [ $PDIR_TO_DELETE -eq 1 ]; then
 	rm -rf $PDIR

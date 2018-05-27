@@ -4,6 +4,7 @@ X_SRC=$HOME/src
 
 # x-fp
 PATCHES_DIR=$X_SRC/patches
+GET_MAINTAINER=$X_SRC/kernel/scripts/get_maintainer.pl
 
 # x-checkpatch
 CHECKPATCH=$X_SRC/kernel/scripts/checkpatch.pl
