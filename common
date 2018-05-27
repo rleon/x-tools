@@ -45,7 +45,7 @@ function checkpatch() {
 	for file in $PDIR/*.patch; do
 		[ -e "$file" ] || continue
 		[ "$file" != "$PDIR/0000-cover-letter.patch" ] || continue
-		perl $CHECKPATCH $IN_TREE --strict -q $file
+		perl $CHECKPATCH $IN_TREE -q $file
 	done
 }
 
