@@ -58,5 +58,7 @@ rsync -avhz --info=name0 --info=progress2 --include='.git' --filter=':- .gitigno
 CURRDIR=$( basename `pwd` )
 if [[ r"$CURRDIR" == r"kernel" ]]; then
 	rsync $K_SRC $K_DST
-	git reset --hard HEAD
+	if [[ r"$CMD" == r"pull" ]]; then
+		git reset --hard HEAD
+	fi
 fi
