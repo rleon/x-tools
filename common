@@ -4,23 +4,23 @@
 REPLY=""
 
 function get_project() {
-	PDIR=$1
-	if [ -e "$PDIR/scripts/faddr2line" ]; then
+	local _PDIR=$1
+	if [ -e "$_PDIR/scripts/faddr2line" ]; then
 		REPLY="kernel"
 		return
 	fi
 
-	if [ -e "$PDIR/buildlib/cbuild" ]; then
+	if [ -e "$_PDIR/buildlib/cbuild" ]; then
 		REPLY="rdma-core"
 		return
 	fi
 
-	if [ -e "$PDIR/rdma/rdma.h" ]; then
+	if [ -e "$_PDIR/rdma/rdma.h" ]; then
 		REPLY="iproute"
 		return
 	fi
 
-	if [ -e "$PDIR/x" ]; then
+	if [ -e "$_PDIR/x" ]; then
 		REPLY="x-tools"
 		return
 	fi
@@ -29,94 +29,94 @@ function get_project() {
 }
 
 function get_target() {
-	PROJECT=$1
-	TARGET=""
-	if [ "$PROJECT" == "rdma-core" ]; then
-		TARGET="rdma-core"
+	local _PROJECT=$1
+	local _TARGET=""
+	if [ "$_PROJECT" == "rdma-core" ]; then
+		_TARGET="rdma-core"
 	fi
 
-	if [ "$PROJECT" == "kernel" ]; then
-		TARGET=$(git symbolic-ref --short HEAD)
-		if [ "$TARGET" != "rdma-next" ] && [ "$TARGET" != "rdma-rc" ]; then
+	if [ "$_PROJECT" == "kernel" ]; then
+		_TARGET=$(git symbolic-ref --short HEAD)
+		if [ "$_TARGET" != "rdma-next" ] && [ "$_TARGET" != "rdma-rc" ]; then
 			# Let's put default for now
-			TARGET="rdma-next"
+			_TARGET="rdma-next"
 		fi
 	fi
 
-	if [ "$PROJECT" == "iproute" ]; then
-		TARGET=$(git symbolic-ref --short HEAD)
-		if [ "$TARGET" != "iproute2-next" ] && [ "$TARGET" != "iproute2-rc" ]; then
+	if [ "$_PROJECT" == "iproute" ]; then
+		_TARGET=$(git symbolic-ref --short HEAD)
+		if [ "$_TARGET" != "iproute2-next" ] && [ "$_TARGET" != "iproute2-rc" ]; then
 			# Let's put default for now
-			TARGET="iproute2-next"
+			_TARGET="iproute2-next"
 		fi
 	fi
 
-	REPLY=$TARGET
+	REPLY=$_TARGET
 }
 
 function change_target() {
 	# Replace rdma-next to be mlx5-next
-	PDIR=$1
-	PROJECT=$2
+	local _PDIR=$1
+	local _PROJECT=$2
 
-	if [ "$PROJECT" != "kernel" ]; then
+	if [ "$_PROJECT" != "kernel" ]; then
 		return
 	fi
 
-	FOUND=0
+	local _FOUND=0
 
 	echo "------------------ GET_MAINTAINER checks ------------------"
-	for file in $PDIR/*.patch; do
-		[ -e "$file" ] || continue
-		[ "$file" != "$PDIR/0000-cover-letter.patch" ] || continue
-		IS_RDMA_NEXT_TARGET=$(grep -c "PATCH rdma-next" $file)
-		if [ $IS_RDMA_NEXT_TARGET -eq 1 ]; then
-			IS_MLX5_NEXT_TARGET=$($GET_MAINTAINER --email --nol --nos --nosubsystem --noroles $file | grep Saeed -c)
-			if [ $IS_MLX5_NEXT_TARGET -eq 1 ]; then
-				FOUND=1
-				echo "REPLACED: $file"
-				sed -i -e 's/PATCH rdma-next/PATCH mlx5-next/g' $file
-				sed -i -e '/Cc: RDMA mailing list/s/$/, Saeed Mahameed <saeedm@mellanox.com>, linux-netdev <netdev@vger.kernel.org>/' $file
+	for _file in $_PDIR/*.patch; do
+		[ -e "$_file" ] || continue
+		[ "$_file" != "$_PDIR/0000-cover-letter.patch" ] || continue
+		local _IS_RDMA_NEXT_TARGET=$(grep -c "PATCH rdma-next" $_file)
+		if [ $_IS_RDMA_NEXT_TARGET -eq 1 ]; then
+			local _IS_MLX5_NEXT_TARGET=$($GET_MAINTAINER --email --nol --nos --nosubsystem --noroles $_file | grep Saeed -c)
+			if [ $_IS_MLX5_NEXT_TARGET -eq 1 ]; then
+				_FOUND=1
+				echo "REPLACED: $_file"
+				sed -i -e 's/PATCH rdma-next/PATCH mlx5-next/g' $_file
+				sed -i -e '/Cc: RDMA mailing list/s/$/, Saeed Mahameed <saeedm@mellanox.com>, linux-netdev <netdev@vger.kernel.org>/' $_file
 			fi
 		fi
 	done
 
-	if [ $FOUND -eq 1 ]; then
-	       if [ -f "$PDIR/0000-cover-letter.patch" ]; then
+	if [ $_FOUND -eq 1 ]; then
+	       if [ -f "$_PDIR/0000-cover-letter.patch" ]; then
 		      # It is important for netdev to see it too
-		      sed -i -e '/Cc: RDMA mailing list/s/$/, Saeed Mahameed <saeedm@mellanox.com>, linux-netdev <netdev@vger.kernel.org>/' $PDIR/0000-cover-letter.patch
+		      sed -i -e '/Cc: RDMA mailing list/s/$/, Saeed Mahameed <saeedm@mellanox.com>, linux-netdev <netdev@vger.kernel.org>/' $_PDIR/0000-cover-letter.patch
 	      fi
 	fi
 	echo "------------------ GET_MAINTAINER checks ends ------------"
 }
 
 function checkpatch() {
-	PDIR=$1
-	PROJECT=$2
+	local _PDIR=$1
+	local _PROJECT=$2
 
-	sed -i "/^Issue:[ 0-9]*/Id" $PDIR/*.patch
-	sed -i "/^Change-id:[ 0-9]*/Id" $PDIR/*.patch
+	sed -i "/^Issue:[ 0-9]*/Id" $_PDIR/*.patch
+	sed -i "/^Change-id:[ 0-9]*/Id" $_PDIR/*.patch
 
-	if [ "$PROJECT" != "kernel" ]; then
-		IN_TREE="--no-tree --ignore PREFER_KERNEL_TYPES,FILE_PATH_CHANGES,EXECUTE_PERMISSIONS"
+	if [ "$_PROJECT" != "kernel" ]; then
+		local _IN_TREE="--no-tree --ignore PREFER_KERNEL_TYPES,FILE_PATH_CHANGES,EXECUTE_PERMISSIONS"
 	else
-		IN_TREE=""
+		local _IN_TREE=""
 	fi
 
-	for file in $PDIR/*.patch; do
-		[ -e "$file" ] || continue
-		[ "$file" != "$PDIR/0000-cover-letter.patch" ] || continue
-		perl $CHECKPATCH $IN_TREE -q $file
+	for f_ile in $_PDIR/*.patch; do
+		[ -e "$_file" ] || continue
+		[ "$_file" != "$_PDIR/0000-cover-letter.patch" ] || continue
+		perl $CHECKPATCH $_IN_TREE -q $_file
 	done
 }
 
 function check_ssh_access() {
-	local ADDR=$1
+	local _ADDR=$1
 	set +e
-	ssh -q -o ConnectTimeout=2 $ADDR exit
-	local SSH_READY=$?
+	ssh -q -o ConnectTimeout=2 $_ADDR exit
+	local _SSH_READY=$?
 	set -e
-	REPLY=$SSH_READY
+	REPLY=$_SSH_READY
 }
 
 function numb_of_cpus() {
@@ -124,25 +124,25 @@ function numb_of_cpus() {
 }
 
 function get_passthrough_line() {
-	VM_MACHINE=$1
-	REPLY=$(grep $VM_MACHINE $DIR/machines.db | awk '{print " -device vfio-pci,host="$2} ' | tr -d '\n' )
+	local _VM_MACHINE=$1
+	REPLY=$(grep $_VM_MACHINE $DIR/machines.db | awk '{print " -device vfio-pci,host="$2} ' | tr -d '\n' )
 }
 
 function get_simx_devices_line() {
-	VM_MACHINE=$1
-	REPLY=$(grep $VM_MACHINE $DIR/machines.db | awk '{print " -device "$2} ' | tr -d '\n' )
+	local _VM_MACHINE=$1
+	REPLY=$(grep $_VM_MACHINE $DIR/machines.db | awk '{print " -device "$2} ' | tr -d '\n' )
 }
 
 function mass_vfio_bind() {
-	VM_MACHINE=$1
+	local _VM_MACHINE=$1
 	echo "Binding devices, it takes time ...."
-	REPLY=$(grep $VM_MACHINE $DIR/machines.db | awk '{print $2} ' | xargs -n1 sudo $DIR/vfio-pci-bind )
+	REPLY=$(grep $_VM_MACHINE $DIR/machines.db | awk '{print $2} ' | xargs -n1 sudo $DIR/vfio-pci-bind )
 }
 
 function qemu_location() {
-	VM_MACHINE=$1
-	IS_QEMU=$(grep $VM_MACHINE $DIR/machines.db | awk '{print $3} ' | tail -n 1)
-	if [ "$IS_QEMU" == "simx" ]; then
+	local _VM_MACHINE=$1
+	local _IS_QEMU=$(grep $_VM_MACHINE $DIR/machines.db | awk '{print $3} ' | tail -n 1)
+	if [ "$_IS_QEMU" == "simx" ]; then
 		REPLY=$X_BI_SIMX
 	else
 		REPLY="qemu-system-x86_64"
@@ -150,8 +150,8 @@ function qemu_location() {
 }
 
 function is_qemu() {
-	VM_MACHINE=$1
-	REPLY=$(grep $VM_MACHINE $DIR/machines.db | awk '{print $3} ' | tail -n 1)
+	local _VM_MACHINE=$1
+	REPLY=$(grep $_VM_MACHINE $DIR/machines.db | awk '{print $3} ' | tail -n 1)
 	if [ "$REPLY" == "simx" ]; then
 		REPLY=0
 	else
@@ -160,51 +160,51 @@ function is_qemu() {
 }
 
 function get_image_type() {
-	VM_MACHINE=$1
-	REPLY=$(grep $VM_MACHINE $DIR/machines.db | awk '{print $3} ' | tail -n 1)
+	local _VM_MACHINE=$1
+	REPLY=$(grep $_VM_MACHINE $DIR/machines.db | awk '{print $3} ' | tail -n 1)
 }
 
 # Check if SSH is ready
 # 255 means connection is not possible
 # 0 means connection is possible
 function block_till_ssh_is_ready() {
-	SERVER=$1
-	echo "Block till $SERVER SSH is ready"
+	local _SERVER=$1
+	echo "Block till $_SERVER SSH is ready"
 	set +e
-	ssh -q root@$SERVER exit
-	SSH_READY=$?
+	ssh -q root@$_SERVER exit
+	local _SSH_READY=$?
 	set -e
-	while [ $SSH_READY -ne 0 ]; do
+	while [ $_SSH_READY -ne 0 ]; do
 		set +e
-		ssh -q root@$SERVER exit
-		SSH_READY=$?
+		ssh -q root@$_SERVER exit
+		_SSH_READY=$?
 		set -e
 		sleep 5s
 	done
 }
 
 function get_arg_type() {
-	ARG=$1
-	IS_NUMBER=0
-	case $ARG in
-		''|*[!0-9]*) IS_NUMBER=0 ;;
-		*) IS_NUMBER=1 ;;
+	local _ARG=$1
+	local _IS_NUMBER=0
+	case $_ARG in
+		''|*[!0-9]*) _IS_NUMBER=0 ;;
+		*) _IS_NUMBER=1 ;;
 	esac
 
-	if [ $IS_NUMBER -eq 0 ]; then
-		git show-ref --tags -q $ARG
+	if [ $_IS_NUMBER -eq 0 ]; then
+		git show-ref --tags -q $_ARG
 		if [ $? -eq 0 ]; then
 			REPLY="TAG"
 			return
 		fi
 
-		git show-ref --heads -q $ARG
+		git show-ref --heads -q $_ARG
 		if [ $? -eq 0 ]; then
 			REPLY="BRANCH"
 			return
 		fi
 
-		git rev-parse --verify -q $ARG > /dev/null
+		git rev-parse --verify -q $_ARG > /dev/null
 		if [ $? -eq 0 ]; then
 			REPLY="SHA"
 			return
