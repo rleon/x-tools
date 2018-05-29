@@ -66,9 +66,11 @@ PRTMP=$(mktemp -d)
 git format-patch -M -C --no-cover-letter -s -o $PRTMP/ $PREV
 
 sed -i -e '/^Issue:[ 0-9]*/Id' -e '/^Change-id:[ 0-9]*/Id' $PRTMP/0001-*
-sed -i "0,/Signed-off-by: /s//$BY\nSigned-off-by: /" $PRTMP/0001-*
+tac $PRTMP/0001-* > $PRTMP/tac.tmp
+sed -i "0,/Signed-off-by: /s//$BY\nSigned-off-by: /" $PRTMP/tac.tmp
+tac $PRTMP/tac.tmp > $PRTMP/0001-*
 
 git reset --hard $PREV
-git am -s $PRTMP/*
+git am --no-signoff $PRTMP/*
 
 rm -rf $PRTMP
