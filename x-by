@@ -1,0 +1,74 @@
+#!/bin/bash
+#
+# Add *-by for specific commit, used for cherry-picked
+# tb - Tested-by
+# rob - Reviewed-by
+# sob - Signed-off-by
+# ack - Acked-by
+
+if [ "$#" -gt 3 ]; then
+        echo "Usage: x by <tb|rob|sob|ack> <name> <commit sha1>"
+        exit 1
+fi
+
+. $HOME/.x-tools
+
+export DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+. $DIR/common
+
+BY_TAG=""
+if [ "$#" -gt 0 ]; then
+	if [ "$1" == "tb" ]; then
+		BY_TAG="Tested-by"
+	fi
+	if [ "$1" == "rob" ]; then
+		BY_TAG="Reviewed-by"
+	fi
+	if [ "$1" == "sob" ]; then
+		BY_TAG="Signed-off-by"
+	fi
+	if [ "$1" == "ack" ]; then
+		BY_TAG="Acked-by"
+	fi
+fi
+
+if [ r"$BY_TAG" == r"" ]; then
+	echo "Please provide type of -by"
+	echo "  tb - Tested-by"
+	echo "  rob - Reviewed-by"
+	echo "  sob - Signed-off-by"
+	echo "  ack - Acked-by"
+	exit
+fi
+
+if [ "$#" -gt 1 ]; then
+	if [ $(grep -c "alias $2" $MUTTAL ) -eq 0 ]; then
+		echo "There is no such name in $MUTTAL"
+		exit
+	fi
+	BY="$BY_TAG: $(grep "alias $2" $MUTTAL | cut -d' ' -f 3-)"
+else
+	echo "Please provide name for $BY_TAG"
+	echo "The data is taken from $MUTTAL"
+	exit
+fi
+
+if [ "$#" -gt 2 ]; then
+	IN=$3
+else
+	IN="HEAD"
+fi
+
+PREV=$IN^1
+
+set -e
+PRTMP=$(mktemp -d)
+git format-patch -M -C --no-cover-letter -s -o $PRTMP/ $PREV
+
+sed -i -e '/^Issue:[ 0-9]*/Id' -e '/^Change-id:[ 0-9]*/Id' $PRTMP/0001-*
+sed -i "0,/Signed-off-by: /s//$BY\nSigned-off-by: /" $PRTMP/0001-*
+
+git reset --hard $PREV
+git am -s $PRTMP/*
+
+rm -rf $PRTMP
