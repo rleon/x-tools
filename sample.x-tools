@@ -13,6 +13,7 @@ CHECKPATCH=$X_SRC/kernel/scripts/checkpatch.pl
 SMATCH=$X_SRC/smatch/smatch
 SPARSE=$X_SRC/sparse/sparse
 KCONFIG=$X_SRC/linux-rdma/.config
+CHECKS_LOG=$X_XRC/logs/kernel.checks
 
 # x-rob
 MUTTAL=$HOME/.mutt/aliases

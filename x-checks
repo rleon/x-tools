@@ -64,19 +64,25 @@ function do_one {
 	#make -s -j $NUMB_OF_CPUS W=1 drivers/infiniband/ drivers/net/ethernet/mellanox/ &>> $REPORT_FILE
 	echo "===== SMATCH =========" &>> $REPORT_FILE
 	make -s -j $NUMB_OF_CPUS CHECK="$SMATCH -p=kernel" C=1 drivers/infiniband/ drivers/net/ethernet/mellanox/ &>> $REPORT_FILE
-
 	make clean -j $NUMB_OF_CPUS &>> /dev/null
 	make allyesconfig &>> /dev/null
 	echo "===== SPARSE =========" &>> $REPORT_FILE
 	make -s -j $NUMB_OF_CPUS CHECK="$SPARSE" C=2 drivers/infiniband/ drivers/net/ethernet/mellanox/ &>> $REPORT_FILE
 
 	popd &>> $REPORT_FILE
-	rm -rf $PDIR
-	git worktree prune
+
 	# TODO: separate checkpatch errors, sparse, smatch
 	#NUMB_OF_ERRORS=$(grep "[0-9]: " $REPORT_FILE | sort | uniq |wc -l)
 	NUMB_OF_ERRORS=$(awk -F": " '{print $1}' $REPORT_FILE | grep ":" | sort | uniq |wc -l)
-	echo "There are $NUMB_OF_ERRORS errors/warnings"
+	LAST_NUMB_OF_ERRORS=$(head -1 $CHECKS_LOG | awk '{print $1}')
+	DELTA=$((LAST_NUMB_OF_ERRORS-NUMB_OF_ERRORS))
+
+	echo "There are $NUMB_OF_ERRORS errors/warnings, delta: $DELTA."
+	tac $CHECKS_LOG > $PDIR/x-checks.tac
+	echo "$NUMB_OF_ERRORS $DELTA $(git log --abbrev=12 -1 --format='%h "%s"')" >> $PDIR/x-checks.tac
+	tac $PDIR/x-checks.tac > $CHECKS_LOG
+	rm -rf $PDIR
+	git worktree prune
 }
 
 do_one $SHA1 $REPORT_FILE
