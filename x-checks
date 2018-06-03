@@ -72,15 +72,21 @@ function do_one {
 	popd &>> $REPORT_FILE
 
 	# TODO: separate checkpatch errors, sparse, smatch
-	#NUMB_OF_ERRORS=$(grep "[0-9]: " $REPORT_FILE | sort | uniq |wc -l)
 	NUMB_OF_ERRORS=$(awk -F": " '{print $1}' $REPORT_FILE | grep ":" | sort | uniq |wc -l)
 	LAST_NUMB_OF_ERRORS=$(head -1 $CHECKS_LOG | awk '{print $1}')
-	DELTA=$((LAST_NUMB_OF_ERRORS-NUMB_OF_ERRORS))
+	DELTA=$((NUMB_OF_ERRORS-LAST_NUMB_OF_ERRORS))
+	if [ "$DELTA" -gt "0" ]; then
+		DELTA="+$DELTA";
+	fi
 
 	echo "There are $NUMB_OF_ERRORS errors/warnings, delta: $DELTA."
 	tac $CHECKS_LOG > $PDIR/x-checks.tac
 	echo "$NUMB_OF_ERRORS $DELTA $(git log --abbrev=12 -1 --format='%h "%s"')" >> $PDIR/x-checks.tac
 	tac $PDIR/x-checks.tac > $CHECKS_LOG
+
+	mkdir -p $X_LOGS/ci
+	cp -f $REPORT_FILE $X_LOGS/ci/$(git log --abbrev=12 -1 --format='%h')
+
 	rm -rf $PDIR
 	git worktree prune
 }

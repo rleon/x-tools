@@ -1,6 +1,7 @@
 #!/bin/bash
 
 X_SRC=$HOME/src
+X_LOGS=/images/logs
 
 # x-fp
 PATCHES_DIR=$X_SRC/patches
@@ -13,7 +14,7 @@ CHECKPATCH=$X_SRC/kernel/scripts/checkpatch.pl
 SMATCH=$X_SRC/smatch/smatch
 SPARSE=$X_SRC/sparse/sparse
 KCONFIG=$X_SRC/linux-rdma/.config
-CHECKS_LOG=$X_XRC/logs/kernel.checks
+CHECKS_LOG=$X_LOGS/kernel.checks
 
 # x-rob
 MUTTAL=$HOME/.mutt/aliases
@@ -28,5 +29,5 @@ X_BI_DIR=/images/vm
 X_BI_VM_CACHE=/images/vm-cache
 X_BI_PASSWORD=secret
 X_BI_MOUNT=/images
-X_BI_LOGS=/images/logs
+X_BI_LOGS=$X_LOGS
 X_BI_SIMX=$X_SRC/simx/x86_64-softmmu/qemu-system-x86_64
