@@ -103,7 +103,7 @@ function checkpatch() {
 		local _IN_TREE=""
 	fi
 
-	for f_ile in $_PDIR/*.patch; do
+	for _file in $_PDIR/*.patch; do
 		[ -e "$_file" ] || continue
 		[ "$_file" != "$_PDIR/0000-cover-letter.patch" ] || continue
 		perl $CHECKPATCH $_IN_TREE -q $_file
