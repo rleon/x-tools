@@ -30,6 +30,9 @@ if [ "$#" -gt 0 ]; then
 	if [ "$1" == "ack" ]; then
 		BY_TAG="Acked-by"
 	fi
+	if [ "$1" == "rep" ]; then
+		BY_TAG="Reported-by"
+	fi
 fi
 
 if [ r"$BY_TAG" == r"" ]; then
@@ -38,6 +41,7 @@ if [ r"$BY_TAG" == r"" ]; then
 	echo "  rob - Reviewed-by"
 	echo "  sob - Signed-off-by"
 	echo "  ack - Acked-by"
+	echo "  rep - Reported-by"
 	exit
 fi
 
@@ -46,7 +50,7 @@ if [ "$#" -gt 1 ]; then
 		echo "There is no such name in $MUTTAL"
 		exit
 	fi
-	BY="$BY_TAG: $(grep "alias $2" $MUTTAL | cut -d' ' -f 3-)"
+	BY="$BY_TAG: $(grep -m 1 "alias $2" $MUTTAL | cut -d' ' -f 3-)"
 else
 	echo "Please provide name for $BY_TAG"
 	echo "The data is taken from $MUTTAL"
