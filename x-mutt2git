@@ -1,0 +1,35 @@
+#!/bin/bash
+#
+# Grab patch from mutt and apply to local/remote git
+
+if [ "$#" -gt 2 ]; then
+        echo "Usage: x mutt2git <local|remote>"
+        exit 1
+fi
+
+if [[ "$1" != "local" && "$1" != "remote" ]]; then
+	echo "Illegal parameter"
+	exit 1
+fi
+
+. $HOME/.x-tools
+
+export DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+. $DIR/common
+
+PATCH=$(mktemp)
+cat - > $PATCH
+sed -i -e '/^Issue:[ 0-9]*/Id' -e '/^Change-id:[ 0-9]*/Id' $PATCH
+
+if [ "$1" == "local" ]; then
+	echo "Applying to $X_SRC/kernel"
+	cd $X_SRC/kernel
+	git am -s $PATCH
+else
+	echo "Applying to $X_SYNC_REMOTE_SERVER:$X_SRC/kernel"
+	scp $PATCH $X_SYNC_REMOTE_SERVER:/tmp/
+	ssh $X_SYNC_REMOTE_SERVER "cd $X_SRC/kernel && git am -s /tmp/$(basename $PATCH)"
+	ssh $X_SYNC_REMOTE_SERVER rm -f /tmp/$(basename $PATCH)
+fi
+
+rm -f $PATCH
