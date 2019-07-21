@@ -21,14 +21,26 @@ PATCH=$(mktemp)
 cat - > $PATCH
 sed -i -e '/^Issue:[ 0-9]*/Id' -e '/^Change-id:[ 0-9]*/Id' $PATCH
 
-if [ "$1" == "local" ]; then
-	echo "Applying to $X_SRC/kernel"
-	cd $X_SRC/kernel
-	git am -s $PATCH
+COUNT=$(grep PATCH $PATCH | grep Subject | grep -c rdma-core)
+if [ $COUNT -eq 1 ]; then
+	PRJ="rdma-core"
 else
-	echo "Applying to $X_SYNC_REMOTE_SERVER:$X_SRC/kernel"
+	COUNT=$(grep PATCH $PATCH | grep Subject | grep -c iproute)
+	if [ $COUNT -eq 1 ]; then
+		PRJ="iproute2"
+	else
+		PRJ="kernel"
+	fi
+fi
+
+if [ "$1" == "local" ]; then
+	echo "Applying to $X_SRC/$PRJ"
+	cd $X_SRC/$PRJ
+	git am -s --reject $PATCH
+else
+	echo "Applying to $X_SYNC_REMOTE_SERVER:/images/leonro/src/$PRJ"
 	scp $PATCH $X_SYNC_REMOTE_SERVER:/tmp/
-	ssh $X_SYNC_REMOTE_SERVER "cd $X_SRC/kernel && git am -s /tmp/$(basename $PATCH)"
+	ssh $X_SYNC_REMOTE_SERVER "cd /images/leonro/src/$PRJ && git am -s --reject /tmp/$(basename $PATCH)"
 	ssh $X_SYNC_REMOTE_SERVER rm -f /tmp/$(basename $PATCH)
 fi
 
